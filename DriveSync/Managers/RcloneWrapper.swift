@@ -233,10 +233,17 @@ actor RcloneWrapper {
         source: String,
         destination: String,
         dryRun: Bool = false,
+        excludePatterns: [String] = [],
         onProgress: (@Sendable (String) -> Void)? = nil
     ) async throws -> SyncResult {
         var args = ["sync", source, destination, "--progress", "--stats-one-line"]
-        
+
+        // Add exclude patterns
+        for pattern in excludePatterns where !pattern.isEmpty {
+            args.append("--exclude")
+            args.append(pattern)
+        }
+
         if dryRun {
             args.append("--dry-run")
         }

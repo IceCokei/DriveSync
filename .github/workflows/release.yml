@@ -45,11 +45,117 @@ jobs:
           cd "$(dirname "$APP_PATH")"
           zip -r -y "$GITHUB_WORKSPACE/build/DriveSync-${GITHUB_REF_NAME}.zip" DriveSync.app
 
+      - name: Generate Release Notes
+        id: changelog
+        run: |
+          # 获取上一个 tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF_NAME}$" | head -n 1)
+
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          # 生成 commit 日志
+          COMMITS=$(git log ${PREV_TAG}..${GITHUB_REF_NAME} --pretty=format:"%s" --reverse)
+
+          # 初始化分类数组
+          FEATURES=""
+          FIXES=""
+          DOCS=""
+          CI=""
+          REFACTOR=""
+          OTHERS=""
+
+          # 分类 commits
+          while IFS= read -r commit; do
+            case "$commit" in
+              feat:*|Feat:*|Feature:*|feature:*)
+                FEATURES="${FEATURES}- ✨ ${commit#*:}\n"
+                ;;
+              fix:*|Fix:*|修复:*|修复：*)
+                FIXES="${FIXES}- 🐛 ${commit#*:}\n"
+                ;;
+              docs:*|Docs:*|文档:*|文档：*|Doc:*|doc:*)
+                DOCS="${DOCS}- 📝 ${commit#*:}\n"
+                ;;
+              ci:*|CI:*|Ci:*)
+                CI="${CI}- 🔧 ${commit#*:}\n"
+                ;;
+              refactor:*|Refactor:*|重构:*|重构：*)
+                REFACTOR="${REFACTOR}- ♻️ ${commit#*:}\n"
+                ;;
+              perf:*|Perf:*|性能:*|性能：*)
+                OTHERS="${OTHERS}- ⚡ ${commit}\n"
+                ;;
+              style:*|Style:*|样式:*|样式：*)
+                OTHERS="${OTHERS}- 💄 ${commit}\n"
+                ;;
+              test:*|Test:*|测试:*|测试：*)
+                OTHERS="${OTHERS}- ✅ ${commit}\n"
+                ;;
+              chore:*|Chore:*)
+                OTHERS="${OTHERS}- 🔨 ${commit#*:}\n"
+                ;;
+              *)
+                # 智能识别中文提交信息
+                if [[ "$commit" =~ ^(新增|添加|增加) ]]; then
+                  FEATURES="${FEATURES}- ✨ ${commit}\n"
+                elif [[ "$commit" =~ ^(修复|修正|解决) ]]; then
+                  FIXES="${FIXES}- 🐛 ${commit}\n"
+                elif [[ "$commit" =~ ^(优化|改进|提升) ]]; then
+                  REFACTOR="${REFACTOR}- ♻️ ${commit}\n"
+                else
+                  OTHERS="${OTHERS}- 📦 ${commit}\n"
+                fi
+                ;;
+            esac
+          done <<< "$COMMITS"
+
+          # 构建 Release Notes
+          RELEASE_NOTES="## 🎉 DriveSync ${GITHUB_REF_NAME}\n\n"
+
+          if [ -n "$FEATURES" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### ✨ New Features\n${FEATURES}\n"
+          fi
+
+          if [ -n "$FIXES" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### 🐛 Bug Fixes\n${FIXES}\n"
+          fi
+
+          if [ -n "$REFACTOR" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### ♻️ Code Improvements\n${REFACTOR}\n"
+          fi
+
+          if [ -n "$DOCS" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### 📝 Documentation\n${DOCS}\n"
+          fi
+
+          if [ -n "$CI" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### 🔧 CI/CD\n${CI}\n"
+          fi
+
+          if [ -n "$OTHERS" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### 📦 Other Changes\n${OTHERS}\n"
+          fi
+
+          # 添加完整变更日志链接
+          RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${GITHUB_REF_NAME}\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}📥 **Downloads**\n"
+          RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.dmg\` - macOS Disk Image (Recommended)\n"
+          RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.zip\` - ZIP Archive\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}💻 **Requirements**: macOS 14.0+\n"
+
+          # 输出到 GitHub Actions
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: DriveSync ${{ github.ref_name }}
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.notes }}
           files: |
             build/DriveSync-${{ github.ref_name }}.dmg
             build/DriveSync-${{ github.ref_name }}.zip

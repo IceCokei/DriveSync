@@ -30,7 +30,7 @@ struct SettingsView: View {
                 }
                 .environmentObject(syncManager)
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 500, height: 600)
     }
 }
 
@@ -261,16 +261,18 @@ struct FolderSettingsRow: View {
 struct AddFolderSheet: View {
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var localPath: String = ""
     @State private var selectedRemote: RcloneRemote?
     @State private var remotePath: String = ""
-    
+    @State private var excludePatterns: [String] = []
+    @State private var newPattern: String = ""
+
     var body: some View {
         VStack(spacing: 20) {
             Text("Add Sync Folder")
                 .font(.headline)
-            
+
             Form {
                 Section {
                     HStack {
@@ -293,29 +295,80 @@ struct AddFolderSheet: View {
                     
                     TextField("Destination Folder (optional)", text: $remotePath)
                         .textFieldStyle(.roundedBorder)
-                    
+
                     Text("Leave empty to sync to the root of your Drive.\nOr type a folder path (e.g. 'Backups/MyMac').")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if excludePatterns.isEmpty {
+                            Text("No exclusions")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
+                                HStack {
+                                    Text(pattern)
+                                        .font(.system(.body, design: .monospaced))
+                                    Spacer()
+                                    Button {
+                                        excludePatterns.remove(at: index)
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        HStack {
+                            TextField("e.g., node_modules or *.tmp", text: $newPattern)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit {
+                                    addPattern()
+                                }
+
+                            Button {
+                                addPattern()
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                    }
+
+                    Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Exclude Patterns")
+                }
             }
             .formStyle(.grouped)
-            
+
             HStack {
                 Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Spacer()
-                
+
                 Button("Add") {
                     if let remote = selectedRemote {
-                        syncManager.addFolder(
+                        let folder = SyncFolder(
                             localPath: localPath,
                             remoteName: remote.name,
-                            remotePath: remotePath
+                            remotePath: remotePath,
+                            excludePatterns: excludePatterns
                         )
+                        syncManager.folders.append(folder)
+                        syncManager.saveFolders()
                         dismiss()
                     }
                 }
@@ -324,15 +377,22 @@ struct AddFolderSheet: View {
             }
         }
         .padding()
-        .frame(width: 450, height: 300)
+        .frame(width: 450, height: 500)
     }
-    
+
+    private func addPattern() {
+        let trimmed = newPattern.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !excludePatterns.contains(trimmed) else { return }
+        excludePatterns.append(trimmed)
+        newPattern = ""
+    }
+
     private func selectFolder() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        
+
         if panel.runModal() == .OK, let url = panel.url {
             localPath = url.path
         }
@@ -345,16 +405,18 @@ struct EditFolderSheet: View {
     let folder: SyncFolder
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var localPath: String = ""
     @State private var selectedRemote: RcloneRemote?
     @State private var remotePath: String = ""
-    
+    @State private var excludePatterns: [String] = []
+    @State private var newPattern: String = ""
+
     var body: some View {
         VStack(spacing: 20) {
             Text("Edit Sync Folder")
                 .font(.headline)
-            
+
             Form {
                 Section {
                     HStack {
@@ -378,23 +440,72 @@ struct EditFolderSheet: View {
                     TextField("Remote Path", text: $remotePath)
                         .textFieldStyle(.roundedBorder)
                 }
+
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if excludePatterns.isEmpty {
+                            Text("No exclusions")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
+                                HStack {
+                                    Text(pattern)
+                                        .font(.system(.body, design: .monospaced))
+                                    Spacer()
+                                    Button {
+                                        excludePatterns.remove(at: index)
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        HStack {
+                            TextField("e.g., node_modules or *.tmp", text: $newPattern)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit {
+                                    addPattern()
+                                }
+
+                            Button {
+                                addPattern()
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                    }
+
+                    Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Exclude Patterns")
+                }
             }
             .formStyle(.grouped)
-            
+
             HStack {
                 Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Spacer()
-                
+
                 Button("Save") {
                     if let remote = selectedRemote {
                         var updated = folder
                         updated.localPath = localPath
                         updated.remoteName = remote.name
                         updated.remotePath = remotePath
+                        updated.excludePatterns = excludePatterns
                         syncManager.updateFolder(updated)
                         dismiss()
                     }
@@ -404,20 +515,28 @@ struct EditFolderSheet: View {
             }
         }
         .padding()
-        .frame(width: 450, height: 300)
+        .frame(width: 450, height: 500)
         .onAppear {
             localPath = folder.localPath
             remotePath = folder.remotePath
+            excludePatterns = folder.excludePatterns
             selectedRemote = syncManager.availableRemotes.first { $0.name == folder.remoteName }
         }
     }
-    
+
+    private func addPattern() {
+        let trimmed = newPattern.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !excludePatterns.contains(trimmed) else { return }
+        excludePatterns.append(trimmed)
+        newPattern = ""
+    }
+
     private func selectFolder() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        
+
         if panel.runModal() == .OK, let url = panel.url {
             localPath = url.path
         }

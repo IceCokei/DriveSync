@@ -23,7 +23,8 @@ struct SyncFolder: Identifiable, Codable, Equatable {
     var lastSyncStatus: SyncStatus
     var isEnabled: Bool
     var lastError: String?
-    
+    var excludePatterns: [String]  // e.g., ["node_modules", "*.tmp", ".git"]
+
     init(
         id: UUID = UUID(),
         localPath: String,
@@ -32,7 +33,8 @@ struct SyncFolder: Identifiable, Codable, Equatable {
         lastSyncDate: Date? = nil,
         lastSyncStatus: SyncStatus = .idle,
         isEnabled: Bool = true,
-        lastError: String? = nil
+        lastError: String? = nil,
+        excludePatterns: [String] = []
     ) {
         self.id = id
         self.localPath = localPath
@@ -42,6 +44,7 @@ struct SyncFolder: Identifiable, Codable, Equatable {
         self.lastSyncStatus = lastSyncStatus
         self.isEnabled = isEnabled
         self.lastError = lastError
+        self.excludePatterns = excludePatterns
     }
     
     var displayName: String {
