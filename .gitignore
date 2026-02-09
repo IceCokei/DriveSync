@@ -1,0 +1,54 @@
+# Git backup
+.git-backup-*
+
+# Deploy
+deploy.sh
+
+# Build output
+build/
+
+# Logs
+*.log
+
+# macOS system files
+.DS_Store
+*.swp
+*~
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Claude Code
+CLAUDE.md
+
+# Cache files
+*.cache
+*.tmp
+*.temp
+__pycache__/
+.cache/
