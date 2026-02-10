@@ -38,7 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().delegate = self
         
         // Register notification categories
-        let errorAction = UNNotificationAction(identifier: "SHOW_LOGS", title: "Show Logs", options: .foreground)
+        let errorAction = UNNotificationAction(identifier: "SHOW_LOGS", title: "notification.show_logs".localized, options: .foreground)
         let errorCategory = UNNotificationCategory(
             identifier: "SYNC_ERROR",
             actions: [errorAction],

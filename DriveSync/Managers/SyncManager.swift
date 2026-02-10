@@ -26,7 +26,13 @@ class SyncManager: ObservableObject {
     // MARK: - Published State
     
     @Published var folders: [SyncFolder] = []
-    @Published var settings: AppSettings
+    @Published var settings: AppSettings {
+        didSet {
+            if settings.language != oldValue.language {
+                LocalizationManager.shared.update(language: settings.language)
+            }
+        }
+    }
     @Published var isRcloneInstalled: Bool = false
     @Published var rcloneVersion: String = ""
     @Published var availableRemotes: [RcloneRemote] = []
@@ -58,22 +64,22 @@ class SyncManager: ObservableObject {
     
     var statusText: String {
         if !isRcloneInstalled {
-            return "rclone not installed"
+            return "sync.rclone_not_installed".localized
         } else if isSyncing {
             if let folder = currentSyncFolder {
-                return "Syncing \(folder.displayName)..."
+                return "sync.syncing_folder".localized(with: folder.displayName)
             }
-            return "Syncing..."
+            return "sync.syncing".localized
         } else {
             let errorCount = enabledFolders.filter { $0.lastSyncStatus == .error }.count
             if errorCount > 0 {
-                return "\(errorCount) folder\(errorCount == 1 ? "" : "s") failed to sync"
+                return "sync.folders_failed".localized(with: errorCount)
             } else if let lastSync = lastSyncDate {
                 let formatter = RelativeDateTimeFormatter()
                 formatter.unitsStyle = .abbreviated
-                return "Last sync: \(formatter.localizedString(for: lastSync, relativeTo: Date()))"
+                return "status.last_sync_relative".localized(with: formatter.localizedString(for: lastSync, relativeTo: Date()))
             } else {
-                return "Ready"
+                return "sync.ready".localized
             }
         }
     }
@@ -103,6 +109,9 @@ class SyncManager: ObservableObject {
             self.settings = AppSettings(rclonePath: detectedPath)
         }
         
+        // Initialize localization with saved language
+        LocalizationManager.shared.update(language: self.settings.language)
+
         // Now initialize rclone with settings
         self.rclone = RcloneWrapper(rclonePath: self.settings.rclonePath)
         
@@ -407,7 +416,7 @@ class SyncManager: ObservableObject {
     func cancelSync() {
         guard isSyncing else { return }
         syncCancelled = true
-        syncProgress = "Cancelling..."
+        syncProgress = "sync.cancelling".localized
         
         // Terminate the rclone process immediately
         Task {
@@ -523,7 +532,7 @@ class SyncManager: ObservableObject {
 
         let percent = parseProgressPercent(from: cleaned)
         if let p = percent, p >= 1.0 {
-            syncProgress = "Finishing..."
+            syncProgress = "sync.finishing".localized
             syncProgressPercent = nil
         } else {
             syncProgress = simplifyProgress(cleaned)
@@ -661,10 +670,10 @@ class SyncManager: ObservableObject {
         content.sound = .default
         
         if hasErrors {
-            content.title = "Sync Failed"
-            content.body = "\(errorCount) folder(s) encountered errors"
+            content.title = "sync.failed_title".localized
+            content.body = "sync.failed_body".localized(with: errorCount)
             content.categoryIdentifier = "SYNC_ERROR"
-            
+
             // Mark as time sensitive for errors
             if #available(macOS 12.0, *) {
                 content.interruptionLevel = .timeSensitive
@@ -672,9 +681,9 @@ class SyncManager: ObservableObject {
         } else {
             // Success case - only proceed if showNotifications is true
             guard settings.showNotifications else { return }
-            
-            content.title = "Sync Complete"
-            content.body = "\(folders.count) folder(s) synced successfully"
+
+            content.title = "sync.complete_title".localized
+            content.body = "sync.complete_body".localized(with: folders.count)
         }
         
         let request = UNNotificationRequest(
@@ -722,8 +731,8 @@ class SyncManager: ObservableObject {
     
     private func sendUpdateNotification(version: String) async {
         let content = UNMutableNotificationContent()
-        content.title = "Update Available"
-        content.body = "Version \(version) is available on GitHub."
+        content.title = "sync.update_available".localized
+        content.body = "sync.update_body".localized(with: version)
         content.sound = .default
         
         // Use a fixed identifier to avoid spamming the user if they don't update

@@ -16,13 +16,13 @@ enum RcloneError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notInstalled:
-            return "rclone is not installed. Please install it via Homebrew: brew install rclone"
+            return "error.not_installed".localized
         case .configurationFailed(let message):
-            return "Configuration failed: \(message)"
+            return "error.config_failed".localized(with: message)
         case .syncFailed(let message):
-            return "Sync failed: \(message)"
+            return "error.sync_failed".localized(with: message)
         case .invalidRemote(let name):
-            return "Invalid remote: \(name)"
+            return "error.invalid_remote".localized(with: name)
         }
     }
 }

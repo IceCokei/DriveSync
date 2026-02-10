@@ -18,6 +18,7 @@ struct SettingsView: View {
             HStack {
                 Spacer()
                 DSTabBar(selectedTab: $selectedTab)
+                    .id(syncManager.settings.language)
                 Spacer()
             }
             .padding(.vertical, 12)
@@ -43,6 +44,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .navigationTitle("DriveSync")
         .frame(width: 500, height: 600)
     }
 }
@@ -69,11 +71,11 @@ struct FoldersSettingsView: View {
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 70, height: 70)
 
-                        Text("No accounts connected")
+                        Text("settings.folders.no_accounts".localized)
                             .font(.title2)
                             .fontWeight(.semibold)
 
-                        Text("Connect your Google Drive account in the Accounts tab to start syncing folders.")
+                        Text("settings.folders.no_accounts_hint".localized)
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -92,18 +94,18 @@ struct FoldersSettingsView: View {
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 60, height: 60)
 
-                        Text("No Folders")
+                        Text("settings.folders.no_folders".localized)
                             .font(.title3)
                             .foregroundStyle(Color.dsTextPrimary)
 
-                        Text("Add a folder to start syncing to Google Drive")
+                        Text("settings.folders.no_folders_hint".localized)
                             .font(.body)
                             .foregroundStyle(Color.dsTextSecondary)
 
                         Button {
                             showingAddSheet = true
                         } label: {
-                            Text("Add Folder")
+                            Text("settings.folders.add_folder".localized)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 8)
                         }
@@ -135,7 +137,7 @@ struct FoldersSettingsView: View {
             // Bottom status bar
             if !syncManager.folders.isEmpty {
                 DSStatusBar(
-                    statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                    statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                     statusColor: syncManager.isSyncing ? .orange : .green,
                     lastSyncText: lastSyncText
                 )
@@ -155,21 +157,25 @@ struct FoldersSettingsView: View {
         guard let mostRecentSync = syncManager.folders
             .compactMap({ $0.lastSyncDate })
             .max() else {
-            return "Never synced"
+            return "status.never_synced".localized
         }
 
         let interval = Date().timeIntervalSince(mostRecentSync)
         if interval < 60 {
-            return "Last sync: just now"
+            return "status.last_sync_now".localized
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "Last sync: \(minutes) min ago"
+            return "status.last_sync_min".localized(with: minutes)
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "Last sync: \(hours) hr ago"
+            return "status.last_sync_hr".localized(with: hours)
         } else {
             let days = Int(interval / 86400)
-            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+            if days > 1 {
+                return "status.last_sync_days".localized(with: days)
+            } else {
+                return "status.last_sync_day".localized(with: days)
+            }
         }
     }
 }
@@ -188,18 +194,20 @@ struct FolderSettingsRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 12) {
             // Large folder icon
-            Image(systemName: "folder.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.blue)
+            Image("FolderIcon")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 36, height: 36)
+                .frame(width: 44)
 
-            // Folder info
+            // Folder info — takes all remaining space
             VStack(alignment: .leading, spacing: 4) {
                 // Name + Status
                 HStack(spacing: 6) {
                     Text(folder.displayName)
-                        .font(DSTypography.body.font)
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.dsTextPrimary)
 
                     Image(systemName: statusIcon)
@@ -233,19 +241,20 @@ struct FolderSettingsRow: View {
                         .truncationMode(.tail)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
-
-            // Timestamp
-            if let lastSync = folder.lastSyncDate {
-                Text(lastSync, style: .relative)
-                    .font(DSTypography.caption.font)
-                    .foregroundStyle(Color.dsTextTertiary)
-            } else {
-                Text("Never")
-                    .font(DSTypography.caption.font)
-                    .foregroundStyle(Color.dsTextTertiary)
+            // Timestamp — fixed width to prevent layout jitter
+            Group {
+                if let lastSync = folder.lastSyncDate {
+                    Text(lastSync, style: .relative)
+                } else {
+                    Text("settings.folders.never".localized)
+                }
             }
+            .font(DSTypography.caption.font)
+            .foregroundStyle(Color.dsTextTertiary)
+            .frame(width: 90, alignment: .trailing)
+            .lineLimit(1)
         }
         .padding(DesignTokens.spacingM)
         .dsCard()
@@ -255,7 +264,7 @@ struct FolderSettingsRow: View {
                     await syncManager.syncFolder(folder)
                 }
             } label: {
-                Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                Label("menu.sync_now".localized, systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(syncManager.isSyncing || !folder.isEnabled)
 
@@ -267,7 +276,7 @@ struct FolderSettingsRow: View {
                     syncManager.updateFolder(updated)
                 }
             )) {
-                Label("Enabled", systemImage: "checkmark.circle")
+                Label("settings.folders.enabled".localized, systemImage: "checkmark.circle")
             }
 
             Divider()
@@ -275,7 +284,7 @@ struct FolderSettingsRow: View {
             Button {
                 onEdit()
             } label: {
-                Label("Edit...", systemImage: "pencil")
+                Label("settings.folders.edit".localized, systemImage: "pencil")
             }
 
             Divider()
@@ -283,7 +292,7 @@ struct FolderSettingsRow: View {
             Button(role: .destructive) {
                 syncManager.removeFolder(folder)
             } label: {
-                Label("Remove", systemImage: "trash")
+                Label("common.remove".localized, systemImage: "trash")
             }
         }
     }
@@ -308,7 +317,7 @@ struct AddFolderSheet: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Text("Add Sync Folder")
+                Text("settings.folder.add_title".localized)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.dsTextPrimary)
 
@@ -316,15 +325,15 @@ struct AddFolderSheet: View {
                     VStack(alignment: .leading, spacing: 20) {
                         // Local Folder Section
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Local Folder")
+                            Text("settings.folder.local_folder".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
                             HStack {
-                                TextField("Select folder...", text: $localPath)
+                                TextField("settings.folder.select_folder".localized, text: $localPath)
                                     .textFieldStyle(.roundedBorder)
 
-                                Button("Browse...") {
+                                Button("settings.folder.browse".localized) {
                                     selectFolder()
                                 }
                                 .buttonStyle(.borderedProminent)
@@ -337,26 +346,26 @@ struct AddFolderSheet: View {
 
                         // Google Drive Account Section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Google Drive Account")
+                            Text("settings.folder.drive_account".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
                             Picker("", selection: $selectedRemote) {
-                                Text("Select...").tag(nil as RcloneRemote?)
+                                Text("settings.folder.select".localized).tag(nil as RcloneRemote?)
                                 ForEach(syncManager.availableRemotes) { remote in
                                     Text(remote.displayName).tag(remote as RcloneRemote?)
                                 }
                             }
                             .labelsHidden()
 
-                            Text("Destination Folder (optional)")
+                            Text("settings.folder.dest_folder_optional".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
-                            TextField("Leave empty for root", text: $remotePath)
+                            TextField("settings.folder.leave_empty".localized, text: $remotePath)
                                 .textFieldStyle(.roundedBorder)
 
-                            Text("Leave empty to sync to the root of your Drive.\nOr type a folder path (e.g. 'Backups/MyMac').")
+                            Text("settings.folder.dest_hint".localized)
                                 .font(DSTypography.caption.font)
                                 .foregroundStyle(Color.dsTextSecondary)
                         }
@@ -365,7 +374,7 @@ struct AddFolderSheet: View {
 
                         // Exclude Patterns Section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Exclude Patterns")
+                            Text("settings.folder.exclude_patterns".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -412,7 +421,7 @@ struct AddFolderSheet: View {
                                 .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
                             }
 
-                            Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                            Text("settings.folder.exclude_hint".localized)
                                 .font(DSTypography.caption.font)
                                 .foregroundStyle(Color.dsTextSecondary)
                         }
@@ -423,14 +432,14 @@ struct AddFolderSheet: View {
                 Divider()
 
                 HStack {
-                    Button("Cancel") {
+                    Button("common.cancel".localized) {
                         dismiss()
                     }
                     .keyboardShortcut(.cancelAction)
 
                     Spacer()
 
-                    Button("Add") {
+                    Button("common.add".localized) {
                         if let remote = selectedRemote {
                             let folder = SyncFolder(
                                 localPath: localPath,
@@ -494,7 +503,7 @@ struct EditFolderSheet: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Text("Edit Sync Folder")
+                Text("settings.folder.edit_title".localized)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.dsTextPrimary)
 
@@ -502,15 +511,15 @@ struct EditFolderSheet: View {
                     VStack(alignment: .leading, spacing: 20) {
                         // Local Folder Section
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Local Folder")
+                            Text("settings.folder.local_folder".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
                             HStack {
-                                TextField("Select folder...", text: $localPath)
+                                TextField("settings.folder.select_folder".localized, text: $localPath)
                                     .textFieldStyle(.roundedBorder)
 
-                                Button("Browse...") {
+                                Button("settings.folder.browse".localized) {
                                     selectFolder()
                                 }
                                 .buttonStyle(.borderedProminent)
@@ -523,23 +532,23 @@ struct EditFolderSheet: View {
 
                         // Google Drive Account Section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Google Drive Account")
+                            Text("settings.folder.drive_account".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
                             Picker("", selection: $selectedRemote) {
-                                Text("Select...").tag(nil as RcloneRemote?)
+                                Text("settings.folder.select".localized).tag(nil as RcloneRemote?)
                                 ForEach(syncManager.availableRemotes) { remote in
                                     Text(remote.displayName).tag(remote as RcloneRemote?)
                                 }
                             }
                             .labelsHidden()
 
-                            Text("Destination Folder")
+                            Text("settings.folder.dest_folder".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
-                            TextField("Remote path", text: $remotePath)
+                            TextField("settings.folder.remote_path".localized, text: $remotePath)
                                 .textFieldStyle(.roundedBorder)
                         }
 
@@ -547,7 +556,7 @@ struct EditFolderSheet: View {
 
                         // Exclude Patterns Section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Exclude Patterns")
+                            Text("settings.folder.exclude_patterns".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -594,7 +603,7 @@ struct EditFolderSheet: View {
                                 .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
                             }
 
-                            Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                            Text("settings.folder.exclude_hint".localized)
                                 .font(DSTypography.caption.font)
                                 .foregroundStyle(Color.dsTextSecondary)
                         }
@@ -605,14 +614,14 @@ struct EditFolderSheet: View {
                 Divider()
 
                 HStack {
-                    Button("Cancel") {
+                    Button("common.cancel".localized) {
                         dismiss()
                     }
                     .keyboardShortcut(.cancelAction)
 
                     Spacer()
 
-                    Button("Save") {
+                    Button("common.save".localized) {
                         if let remote = selectedRemote {
                             var updated = folder
                             updated.localPath = localPath
@@ -665,18 +674,18 @@ struct EditFolderSheet: View {
 struct AddAccountSheet: View {
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
-    
+
     enum SetupStep {
         case connecting
         case naming
     }
-    
+
     @State private var step: SetupStep = .connecting
     @State private var tempRemoteName: String = ""
     @State private var accountName: String = ""
     @State private var isProcessing = false
     @State private var errorMessage: String?
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image("CloudServerIcon")
@@ -697,57 +706,57 @@ struct AddAccountSheet: View {
             startConnection()
         }
     }
-    
+
     private var connectingView: some View {
         VStack(spacing: 16) {
-            Text("Connecting to Google Drive...")
+            Text("settings.accounts.connecting".localized)
                 .font(.headline)
-            
+
             ProgressView()
                 .controlSize(.regular)
-            
-            Text("Complete the sign-in in your browser, then return here.")
+
+            Text("settings.accounts.complete_signin".localized)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            
-            Button("Cancel") {
+
+            Button("common.cancel".localized) {
                 dismiss()
             }
             .padding(.top, 8)
         }
     }
-    
+
     private var namingView: some View {
         VStack(spacing: 16) {
-            Text("Account Connected!")
+            Text("settings.accounts.connected_success".localized)
                 .font(.headline)
                 .foregroundStyle(.green)
-            
+
             VStack(alignment: .leading, spacing: 8) {
-                Text("Give this account a name:")
+                Text("settings.accounts.name_prompt".localized)
                     .font(.subheadline)
-                
-                TextField("e.g., Work, Personal, john@gmail.com", text: $accountName)
+
+                TextField("settings.accounts.name_placeholder".localized, text: $accountName)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 300)
-                
-                Text("This helps you identify which Google account this is.")
+
+                Text("settings.accounts.name_hint".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
             if let error = errorMessage {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
             }
-            
+
             HStack(spacing: 16) {
-                Button("Skip") {
+                Button("common.skip".localized) {
                     dismiss()
                 }
-                
+
                 Button {
                     finishWithName()
                 } label: {
@@ -756,7 +765,7 @@ struct AddAccountSheet: View {
                             .controlSize(.small)
                             .padding(.horizontal)
                     } else {
-                        Text("Save")
+                        Text("common.save".localized)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -765,17 +774,17 @@ struct AddAccountSheet: View {
             }
         }
     }
-    
+
     private func startConnection() {
         Task {
             if let tempName = await syncManager.quickSetupGoogleDrive() {
                 tempRemoteName = tempName
-                
+
                 // Poll for the remote to appear (user completing OAuth)
                 for _ in 0..<60 { // Wait up to 60 seconds
                     try? await Task.sleep(nanoseconds: 1_000_000_000)
                     await syncManager.refreshRemotes()
-                    
+
                     if syncManager.availableRemotes.contains(where: { $0.name == tempName }) {
                         step = .naming
                         return
@@ -786,26 +795,26 @@ struct AddAccountSheet: View {
             dismiss()
         }
     }
-    
+
     private func finishWithName() {
         let newName = sanitizedName
         guard !newName.isEmpty else { return }
-        
+
         isProcessing = true
         errorMessage = nil
-        
+
         Task {
             let success = await syncManager.renameRemote(from: tempRemoteName, to: newName)
-            
+
             if success {
                 dismiss()
             } else {
-                errorMessage = "Failed to rename. The account is still connected as '\(tempRemoteName)'."
+                errorMessage = "settings.accounts.rename_failed".localized(with: tempRemoteName)
                 isProcessing = false
             }
         }
     }
-    
+
     private var sanitizedName: String {
         let trimmed = accountName.trimmingCharacters(in: .whitespaces)
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_@.-"))
@@ -819,7 +828,6 @@ struct AddAccountSheet: View {
 struct AccountsSettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
     @State private var showingAddAccountSheet = false
-    @State private var showingRenameSheet = false
     @State private var accountToRename: RcloneRemote?
 
     var body: some View {
@@ -834,11 +842,11 @@ struct AccountsSettingsView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 70, height: 70)
 
-                    Text("Connect to Google Drive")
+                    Text("settings.accounts.connect_title".localized)
                         .font(.title2)
                         .fontWeight(.semibold)
 
-                    Text("Sign in with your Google account to start syncing folders.")
+                    Text("settings.accounts.connect_hint".localized)
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -847,7 +855,7 @@ struct AccountsSettingsView: View {
                     Button {
                         showingAddAccountSheet = true
                     } label: {
-                        Label("Connect Google Drive", systemImage: "link")
+                        Label("settings.accounts.connect_button".localized, systemImage: "link")
                             .font(.headline)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
@@ -857,7 +865,7 @@ struct AccountsSettingsView: View {
                     .controlSize(.large)
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.radiusL))
 
-                    Text("This will open your browser to sign in.")
+                    Text("settings.accounts.browser_hint".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -882,7 +890,7 @@ struct AccountsSettingsView: View {
                                         .font(DSTypography.body.font)
                                         .foregroundStyle(Color.dsTextPrimary)
 
-                                    Text("Google Drive")
+                                    Text("settings.accounts.google_drive".localized)
                                         .font(DSTypography.caption.font)
                                         .foregroundStyle(Color.dsTextSecondary)
                                 }
@@ -898,7 +906,7 @@ struct AccountsSettingsView: View {
                                         .frame(width: 24, height: 24)
                                         .foregroundStyle(Color.green)
 
-                                    Text("Connected")
+                                    Text("settings.accounts.connected".localized)
                                         .font(DSTypography.caption.font)
                                         .foregroundStyle(Color.dsTextSecondary)
                                 }
@@ -908,9 +916,8 @@ struct AccountsSettingsView: View {
                             .contextMenu {
                                 Button {
                                     accountToRename = remote
-                                    showingRenameSheet = true
                                 } label: {
-                                    Label("Rename...", systemImage: "pencil")
+                                    Label("settings.accounts.rename".localized, systemImage: "pencil")
                                 }
 
                                 Divider()
@@ -920,7 +927,7 @@ struct AccountsSettingsView: View {
                                         await syncManager.deleteRemote(name: remote.name)
                                     }
                                 } label: {
-                                    Label("Remove Account", systemImage: "trash")
+                                    Label("settings.accounts.remove".localized, systemImage: "trash")
                                 }
                             }
                         }
@@ -937,7 +944,7 @@ struct AccountsSettingsView: View {
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 16, height: 16)
 
-                                Text("Add Another Account")
+                                Text("settings.accounts.add_another".localized)
                                     .font(DSTypography.body.font)
 
                                 Spacer()
@@ -966,7 +973,7 @@ struct AccountsSettingsView: View {
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 14, height: 14)
 
-                                Text("Refresh")
+                                Text("common.refresh".localized)
                                     .font(DSTypography.body.font)
 
                                 Spacer()
@@ -988,7 +995,7 @@ struct AccountsSettingsView: View {
             // Bottom status bar
             if !syncManager.availableRemotes.isEmpty {
                 DSStatusBar(
-                    statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                    statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                     statusColor: syncManager.isSyncing ? .orange : .green,
                     lastSyncText: lastSyncText
                 )
@@ -998,11 +1005,9 @@ struct AccountsSettingsView: View {
             AddAccountSheet()
                 .environmentObject(syncManager)
         }
-        .sheet(isPresented: $showingRenameSheet) {
-            if let remote = accountToRename {
-                RenameAccountSheet(currentName: remote.name)
-                    .environmentObject(syncManager)
-            }
+        .sheet(item: $accountToRename) { remote in
+            RenameAccountSheet(currentName: remote.name)
+                .environmentObject(syncManager)
         }
         .onAppear {
             Task {
@@ -1015,21 +1020,25 @@ struct AccountsSettingsView: View {
         guard let mostRecentSync = syncManager.folders
             .compactMap({ $0.lastSyncDate })
             .max() else {
-            return "Never synced"
+            return "status.never_synced".localized
         }
 
         let interval = Date().timeIntervalSince(mostRecentSync)
         if interval < 60 {
-            return "Last sync: just now"
+            return "status.last_sync_now".localized
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "Last sync: \(minutes) min ago"
+            return "status.last_sync_min".localized(with: minutes)
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "Last sync: \(hours) hr ago"
+            return "status.last_sync_hr".localized(with: hours)
         } else {
             let days = Int(interval / 86400)
-            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+            if days > 1 {
+                return "status.last_sync_days".localized(with: days)
+            } else {
+                return "status.last_sync_day".localized(with: days)
+            }
         }
     }
 }
@@ -1039,39 +1048,39 @@ struct AccountsSettingsView: View {
 struct RenameAccountSheet: View {
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
-    
+
     let currentName: String
     @State private var newName: String = ""
     @State private var isProcessing = false
     @State private var errorMessage: String?
-    
+
     var body: some View {
         VStack(spacing: 20) {
-            Text("Rename Account")
+            Text("settings.accounts.rename_title".localized)
                 .font(.headline)
-            
+
             VStack(alignment: .leading, spacing: 8) {
-                Text("Current name: \(currentName)")
+                Text("settings.accounts.current_name".localized(with: currentName))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                
-                TextField("New name", text: $newName)
+
+                TextField("settings.accounts.new_name".localized, text: $newName)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 280)
             }
-            
+
             if let error = errorMessage {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
             }
-            
+
             HStack(spacing: 16) {
-                Button("Cancel") {
+                Button("common.cancel".localized) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Button {
                     renameAccount()
                 } label: {
@@ -1080,7 +1089,7 @@ struct RenameAccountSheet: View {
                             .controlSize(.small)
                             .padding(.horizontal)
                     } else {
-                        Text("Rename")
+                        Text("common.rename".localized)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -1094,23 +1103,23 @@ struct RenameAccountSheet: View {
             newName = currentName
         }
     }
-    
+
     private func renameAccount() {
         isProcessing = true
         errorMessage = nil
-        
+
         Task {
             let success = await syncManager.renameRemote(from: currentName, to: sanitizedName)
-            
+
             if success {
                 dismiss()
             } else {
-                errorMessage = "Failed to rename account"
+                errorMessage = "settings.accounts.rename_error".localized
                 isProcessing = false
             }
         }
     }
-    
+
     private var sanitizedName: String {
         let trimmed = newName.trimmingCharacters(in: .whitespaces)
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_@.-"))
@@ -1123,13 +1132,13 @@ struct RenameAccountSheet: View {
 
 struct GeneralSettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
-    
+
     @State private var isCheckingForUpdates = false
     @State private var showingUpdateAlert = false
     @State private var updateAlertTitle = ""
     @State private var updateAlertMessage = ""
     @State private var updateURL: URL?
-    
+
     // Advanced / Reset state
     @State private var showingResetConfirmation = false
 
@@ -1139,11 +1148,11 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Theme Section
                 VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
-                    DSSectionHeader(title: "Theme")
+                    DSSectionHeader(title: "settings.general.theme".localized)
 
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Appearance")
+                            Text("settings.general.appearance".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1156,6 +1165,28 @@ struct GeneralSettingsView: View {
                             }
                             .pickerStyle(.segmented)
                             .frame(width: 180)
+                            .id(syncManager.settings.language)
+                        }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        // Language Picker
+                        HStack {
+                            Text("settings.general.language".localized)
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Picker("", selection: $syncManager.settings.language) {
+                                ForEach(AppLanguage.allCases, id: \.self) { lang in
+                                    Text(lang.displayName).tag(lang)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 140)
+                            .id(syncManager.settings.language)
                         }
                         .padding(DesignTokens.spacingM)
                     }
@@ -1164,11 +1195,11 @@ struct GeneralSettingsView: View {
 
                 // Sync Schedule Section
                 VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
-                    DSSectionHeader(title: "Sync Schedule")
+                    DSSectionHeader(title: "settings.general.sync_schedule".localized)
 
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Sync Interval")
+                            Text("settings.general.sync_interval".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1181,13 +1212,14 @@ struct GeneralSettingsView: View {
                             }
                             .labelsHidden()
                             .frame(width: 140)
+                            .id(syncManager.settings.language)
                         }
                         .padding(DesignTokens.spacingM)
 
                         Divider()
 
                         HStack {
-                            Text("Sync when app launches")
+                            Text("settings.general.sync_on_launch".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1205,11 +1237,11 @@ struct GeneralSettingsView: View {
 
                 // App Behavior Section
                 VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
-                    DSSectionHeader(title: "App Behavior")
+                    DSSectionHeader(title: "settings.general.app_behavior".localized)
 
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Show notifications after sync")
+                            Text("settings.general.show_notifications".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1225,7 +1257,7 @@ struct GeneralSettingsView: View {
                         Divider()
 
                         HStack {
-                            Text("Notify on Error")
+                            Text("settings.general.notify_error".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1241,7 +1273,7 @@ struct GeneralSettingsView: View {
                         Divider()
 
                         HStack {
-                            Text("Launch at login")
+                            Text("settings.general.launch_login".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1259,11 +1291,11 @@ struct GeneralSettingsView: View {
 
                 // About Section
                 VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
-                    DSSectionHeader(title: "About")
+                    DSSectionHeader(title: "settings.general.about".localized)
 
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Automatically check for updates")
+                            Text("settings.general.auto_updates".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1279,7 +1311,7 @@ struct GeneralSettingsView: View {
                         Divider()
 
                         HStack {
-                            Text("Check for Updates")
+                            Text("settings.general.check_updates".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1289,7 +1321,7 @@ struct GeneralSettingsView: View {
                                 ProgressView()
                                     .controlSize(.small)
                             } else {
-                                Button("Check") {
+                                Button("common.check".localized) {
                                     checkForUpdates()
                                 }
                                 .buttonStyle(.plain)
@@ -1302,7 +1334,7 @@ struct GeneralSettingsView: View {
                         Divider()
 
                         HStack {
-                            Text("Version")
+                            Text("settings.general.version".localized)
                                 .font(DSTypography.body.font)
                                 .foregroundStyle(Color.dsTextPrimary)
 
@@ -1324,18 +1356,18 @@ struct GeneralSettingsView: View {
 
         // Bottom status bar
         DSStatusBar(
-                statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                 statusColor: syncManager.isSyncing ? .orange : .green,
                 lastSyncText: lastSyncText
             )
         }
         .alert(updateAlertTitle, isPresented: $showingUpdateAlert) {
             if let url = updateURL {
-                Button("Get Update") {
+                Button("settings.general.get_update".localized) {
                     NSWorkspace.shared.open(url)
                 }
             }
-            Button("OK", role: .cancel) { }
+            Button("common.ok".localized, role: .cancel) { }
         } message: {
             Text(updateAlertMessage)
         }
@@ -1348,60 +1380,60 @@ struct GeneralSettingsView: View {
                 await syncManager.checkRcloneInstallation()
             }
         }
-        .alert("Reset All Settings?", isPresented: $showingResetConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset Everything", role: .destructive) {
+        .alert("settings.general.reset_title".localized, isPresented: $showingResetConfirmation) {
+            Button("common.cancel".localized, role: .cancel) { }
+            Button("settings.general.reset_confirm".localized, role: .destructive) {
                 syncManager.resetAllSettings()
             }
         } message: {
-            Text("This will remove all sync folders and Google Drive account connections from the app. This cannot be undone.")
+            Text("settings.general.reset_message".localized)
         }
     }
-    
+
     private func checkForUpdates() {
         isCheckingForUpdates = true
         Task {
             do {
                 let (isAvailable, latestVersion, url) = try await syncManager.checkForUpdates()
                 if isAvailable {
-                    updateAlertTitle = "Update Available"
-                    updateAlertMessage = "A new version (\(latestVersion)) is available."
+                    updateAlertTitle = "settings.general.update_available".localized
+                    updateAlertMessage = "settings.general.update_message".localized(with: latestVersion)
                     updateURL = url
                 } else {
-                    updateAlertTitle = "Up to Date"
-                    updateAlertMessage = "You are running the latest version."
+                    updateAlertTitle = "settings.general.up_to_date".localized
+                    updateAlertMessage = "settings.general.up_to_date_message".localized
                     updateURL = nil
                 }
             } catch {
-                updateAlertTitle = "Error"
-                updateAlertMessage = "Failed to check for updates. Please try again later."
+                updateAlertTitle = "settings.general.update_error".localized
+                updateAlertMessage = "settings.general.update_error_message".localized
                 updateURL = nil
             }
             showingUpdateAlert = true
             isCheckingForUpdates = false
         }
     }
-    
+
     /// Calculate when the next daily sync will occur
     private var nextSyncDescription: String {
         let calendar = Calendar.current
         let syncTimeComponents = calendar.dateComponents([.hour, .minute], from: syncManager.settings.dailySyncTime)
-        
+
         var todayComponents = calendar.dateComponents([.year, .month, .day], from: Date())
         todayComponents.hour = syncTimeComponents.hour
         todayComponents.minute = syncTimeComponents.minute
-        
+
         guard let todayAtSyncTime = calendar.date(from: todayComponents) else {
             return "Unknown"
         }
-        
+
         let nextSync: Date
         if todayAtSyncTime > Date() {
             nextSync = todayAtSyncTime
         } else {
             nextSync = calendar.date(byAdding: .day, value: 1, to: todayAtSyncTime) ?? todayAtSyncTime
         }
-        
+
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
@@ -1412,21 +1444,25 @@ struct GeneralSettingsView: View {
         guard let mostRecentSync = syncManager.folders
             .compactMap({ $0.lastSyncDate })
             .max() else {
-            return "Never synced"
+            return "status.never_synced".localized
         }
 
         let interval = Date().timeIntervalSince(mostRecentSync)
         if interval < 60 {
-            return "Last sync: just now"
+            return "status.last_sync_now".localized
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "Last sync: \(minutes) min ago"
+            return "status.last_sync_min".localized(with: minutes)
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "Last sync: \(hours) hr ago"
+            return "status.last_sync_hr".localized(with: hours)
         } else {
             let days = Int(interval / 86400)
-            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+            if days > 1 {
+                return "status.last_sync_days".localized(with: days)
+            } else {
+                return "status.last_sync_day".localized(with: days)
+            }
         }
     }
 }

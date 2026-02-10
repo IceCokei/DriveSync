@@ -1,0 +1,157 @@
+/* DriveSync - English Localization */
+
+// MARK: - Common
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.ok" = "OK";
+"common.add" = "Add";
+"common.remove" = "Remove";
+"common.rename" = "Rename";
+"common.skip" = "Skip";
+"common.check" = "Check";
+"common.refresh" = "Refresh";
+
+// MARK: - Menu Bar
+"menu.syncing_folder" = "Syncing %@";
+"menu.syncing" = "Syncing...";
+"menu.preparing" = "Preparing...";
+"menu.rclone_not_installed" = "rclone is not installed";
+"menu.install_homebrew" = "Install via Homebrew:";
+"menu.check_again" = "Check Again";
+"menu.no_folders" = "No folders configured";
+"menu.add_folder" = "Add Folder";
+"menu.folders" = "FOLDERS";
+"menu.sync_all" = "Sync All";
+"menu.settings" = "Settings...";
+"menu.quit" = "Quit DriveSync";
+"menu.sync_now" = "Sync Now";
+
+// MARK: - Settings Tabs
+"settings.tab.folders" = "Folders";
+"settings.tab.accounts" = "Accounts";
+"settings.tab.settings" = "Settings";
+
+// MARK: - Folders Settings
+"settings.folders.no_accounts" = "No accounts connected";
+"settings.folders.no_accounts_hint" = "Connect your Google Drive account in the Accounts tab to start syncing folders.";
+"settings.folders.no_folders" = "No Folders";
+"settings.folders.no_folders_hint" = "Add a folder to start syncing to Google Drive";
+"settings.folders.add_folder" = "Add Folder";
+"settings.folders.enabled" = "Enabled";
+"settings.folders.edit" = "Edit...";
+"settings.folders.never" = "Never";
+
+// MARK: - Add/Edit Folder Sheet
+"settings.folder.add_title" = "Add Sync Folder";
+"settings.folder.edit_title" = "Edit Sync Folder";
+"settings.folder.local_folder" = "Local Folder";
+"settings.folder.select_folder" = "Select folder...";
+"settings.folder.browse" = "Browse...";
+"settings.folder.drive_account" = "Google Drive Account";
+"settings.folder.select" = "Select...";
+"settings.folder.dest_folder_optional" = "Destination Folder (optional)";
+"settings.folder.dest_folder" = "Destination Folder";
+"settings.folder.leave_empty" = "Leave empty for root";
+"settings.folder.remote_path" = "Remote path";
+"settings.folder.dest_hint" = "Leave empty to sync to the root of your Drive.\nOr type a folder path (e.g. 'Backups/MyMac').";
+"settings.folder.exclude_patterns" = "Exclude Patterns";
+"settings.folder.exclude_hint" = "Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').";
+
+// MARK: - Accounts Settings
+"settings.accounts.connect_title" = "Connect to Google Drive";
+"settings.accounts.connect_hint" = "Sign in with your Google account to start syncing folders.";
+"settings.accounts.connect_button" = "Connect Google Drive";
+"settings.accounts.browser_hint" = "This will open your browser to sign in.";
+"settings.accounts.google_drive" = "Google Drive";
+"settings.accounts.connected" = "Connected";
+"settings.accounts.rename" = "Rename...";
+"settings.accounts.remove" = "Remove Account";
+"settings.accounts.add_another" = "Add Another Account";
+"settings.accounts.connecting" = "Connecting to Google Drive...";
+"settings.accounts.complete_signin" = "Complete the sign-in in your browser, then return here.";
+"settings.accounts.connected_success" = "Account Connected!";
+"settings.accounts.name_prompt" = "Give this account a name:";
+"settings.accounts.name_placeholder" = "e.g., Work, Personal, john@gmail.com";
+"settings.accounts.name_hint" = "This helps you identify which Google account this is.";
+"settings.accounts.rename_failed" = "Failed to rename. The account is still connected as '%@'.";
+
+// MARK: - Rename Account
+"settings.accounts.rename_title" = "Rename Account";
+"settings.accounts.current_name" = "Current name: %@";
+"settings.accounts.new_name" = "New name";
+"settings.accounts.rename_error" = "Failed to rename account";
+
+// MARK: - General Settings
+"settings.general.theme" = "Theme";
+"settings.general.appearance" = "Appearance";
+"settings.general.language" = "Language";
+"settings.general.sync_schedule" = "Sync Schedule";
+"settings.general.sync_interval" = "Sync Interval";
+"settings.general.sync_on_launch" = "Sync when app launches";
+"settings.general.app_behavior" = "App Behavior";
+"settings.general.show_notifications" = "Show notifications after sync";
+"settings.general.notify_error" = "Notify on Error";
+"settings.general.launch_login" = "Launch at login";
+"settings.general.about" = "About";
+"settings.general.auto_updates" = "Automatically check for updates";
+"settings.general.check_updates" = "Check for Updates";
+"settings.general.version" = "Version";
+"settings.general.update_available" = "Update Available";
+"settings.general.update_message" = "A new version (%@) is available.";
+"settings.general.get_update" = "Get Update";
+"settings.general.up_to_date" = "Up to Date";
+"settings.general.up_to_date_message" = "You are running the latest version.";
+"settings.general.update_error" = "Error";
+"settings.general.update_error_message" = "Failed to check for updates. Please try again later.";
+"settings.general.reset_title" = "Reset All Settings?";
+"settings.general.reset_confirm" = "Reset Everything";
+"settings.general.reset_message" = "This will remove all sync folders and Google Drive account connections from the app. This cannot be undone.";
+
+// MARK: - Status
+"status.syncing" = "Syncing...";
+"status.all_synced" = "All synced";
+"status.never_synced" = "Never synced";
+"status.last_sync_now" = "Last sync: just now";
+"status.last_sync_min" = "Last sync: %d min ago";
+"status.last_sync_hr" = "Last sync: %d hr ago";
+"status.last_sync_day" = "Last sync: %d day ago";
+"status.last_sync_days" = "Last sync: %d days ago";
+"status.last_sync_relative" = "Last sync: %@";
+
+// MARK: - Sync Manager
+"sync.rclone_not_installed" = "rclone not installed";
+"sync.syncing_folder" = "Syncing %@...";
+"sync.syncing" = "Syncing...";
+"sync.folders_failed" = "%d folder(s) failed to sync";
+"sync.ready" = "Ready";
+"sync.cancelling" = "Cancelling...";
+"sync.finishing" = "Finishing...";
+"sync.failed_title" = "Sync Failed";
+"sync.failed_body" = "%d folder(s) encountered errors";
+"sync.complete_title" = "Sync Complete";
+"sync.complete_body" = "%d folder(s) synced successfully";
+"sync.update_available" = "Update Available";
+"sync.update_body" = "Version %@ is available on GitHub.";
+
+// MARK: - Enums
+"enum.appearance.light" = "Light";
+"enum.appearance.dark" = "Dark";
+"enum.appearance.auto" = "Auto";
+"enum.interval.manual" = "Manual Only";
+"enum.interval.15min" = "Every 15 minutes";
+"enum.interval.30min" = "Every 30 minutes";
+"enum.interval.hourly" = "Every Hour";
+"enum.interval.daily" = "Once a Day";
+"enum.interval.custom" = "Every %d minutes";
+"enum.language.system" = "System";
+"enum.language.en" = "English";
+"enum.language.zhHans" = "简体中文";
+
+// MARK: - Errors
+"error.not_installed" = "rclone is not installed. Please install it via Homebrew: brew install rclone";
+"error.config_failed" = "Configuration failed: %@";
+"error.sync_failed" = "Sync failed: %@";
+"error.invalid_remote" = "Invalid remote: %@";
+
+// MARK: - Notifications
+"notification.show_logs" = "Show Logs";

@@ -118,11 +118,11 @@ struct MenuBarView: View {
                     .tint(.blue)
 
                 if let folder = syncManager.currentSyncFolder {
-                    Text("Syncing \(folder.displayName)")
+                    Text("menu.syncing_folder".localized(with: folder.displayName))
                         .font(.system(size: 13))
                         .foregroundColor(.primary)
                 } else {
-                    Text("Syncing...")
+                    Text("menu.syncing".localized)
                         .font(.system(size: 13))
                         .foregroundColor(.primary)
                 }
@@ -153,7 +153,7 @@ struct MenuBarView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    Text(syncManager.syncProgress.isEmpty ? "Preparing..." : syncManager.syncProgress)
+                    Text(syncManager.syncProgress.isEmpty ? "menu.preparing".localized : syncManager.syncProgress)
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -166,11 +166,11 @@ struct MenuBarView: View {
 
     private var rcloneNotInstalledSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("rclone is not installed")
+            Text("menu.rclone_not_installed".localized)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.red)
 
-            Text("Install via Homebrew:")
+            Text("menu.install_homebrew".localized)
                 .font(.system(size: 11))
                 .foregroundColor(.secondary)
 
@@ -192,7 +192,7 @@ struct MenuBarView: View {
                 .buttonStyle(.plain)
             }
 
-            Button("Check Again") {
+            Button("menu.check_again".localized) {
                 Task {
                     await syncManager.checkRcloneInstallation()
                 }
@@ -209,14 +209,14 @@ struct MenuBarView: View {
                 .foregroundColor(.secondary)
                 .symbolRenderingMode(.hierarchical)
 
-            Text("No folders configured")
+            Text("menu.no_folders".localized)
                 .font(.system(size: 13))
                 .foregroundColor(.secondary)
 
             Button {
                 openSettings()
             } label: {
-                Text("Add Folder")
+                Text("menu.add_folder".localized)
                     .font(.system(size: 13, weight: .medium))
             }
             .buttonStyle(.borderedProminent)
@@ -229,7 +229,7 @@ struct MenuBarView: View {
         let enabledFolders = syncManager.folders.filter { $0.isEnabled }
 
         return VStack(alignment: .leading, spacing: 0) {
-            Text("FOLDERS")
+            Text("menu.folders".localized)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
@@ -254,7 +254,7 @@ struct MenuBarView: View {
                     await syncManager.syncAll()
                 }
             } label: {
-                Label("Sync All", systemImage: "arrow.triangle.2.circlepath")
+                Label("menu.sync_all".localized, systemImage: "arrow.triangle.2.circlepath")
                     .font(.system(size: 13))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -266,7 +266,7 @@ struct MenuBarView: View {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             } label: {
-                Label("Settings...", systemImage: "gear")
+                Label("menu.settings".localized, systemImage: "gear")
                     .font(.system(size: 13))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -279,7 +279,7 @@ struct MenuBarView: View {
         Button {
             NSApplication.shared.terminate(nil)
         } label: {
-            Label("Quit DriveSync", systemImage: "power")
+            Label("menu.quit".localized, systemImage: "power")
                 .font(.system(size: 13))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -342,7 +342,7 @@ struct FolderCardView: View {
                     await syncManager.syncFolder(folder)
                 }
             } label: {
-                Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                Label("menu.sync_now".localized, systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(syncManager.isSyncing)
 
@@ -351,7 +351,7 @@ struct FolderCardView: View {
             Button(role: .destructive) {
                 syncManager.removeFolder(folder)
             } label: {
-                Label("Remove", systemImage: "trash")
+                Label("common.remove".localized, systemImage: "trash")
             }
         }
     }

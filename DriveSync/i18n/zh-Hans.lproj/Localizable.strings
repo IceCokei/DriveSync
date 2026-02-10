@@ -1,0 +1,157 @@
+/* DriveSync - 简体中文本地化 */
+
+// MARK: - 通用
+"common.cancel" = "取消";
+"common.save" = "保存";
+"common.ok" = "好";
+"common.add" = "添加";
+"common.remove" = "移除";
+"common.rename" = "重命名";
+"common.skip" = "跳过";
+"common.check" = "检查";
+"common.refresh" = "刷新";
+
+// MARK: - 菜单栏
+"menu.syncing_folder" = "正在同步 %@";
+"menu.syncing" = "同步中...";
+"menu.preparing" = "准备中...";
+"menu.rclone_not_installed" = "rclone 未安装";
+"menu.install_homebrew" = "通过 Homebrew 安装：";
+"menu.check_again" = "重新检查";
+"menu.no_folders" = "未配置文件夹";
+"menu.add_folder" = "添加文件夹";
+"menu.folders" = "文件夹";
+"menu.sync_all" = "全部同步";
+"menu.settings" = "设置...";
+"menu.quit" = "退出 DriveSync";
+"menu.sync_now" = "立即同步";
+
+// MARK: - 设置标签
+"settings.tab.folders" = "文件";
+"settings.tab.accounts" = "账户";
+"settings.tab.settings" = "设置";
+
+// MARK: - 文件夹设置
+"settings.folders.no_accounts" = "未连接账户";
+"settings.folders.no_accounts_hint" = "在「账户」标签页中连接您的 Google Drive 账户以开始同步文件夹。";
+"settings.folders.no_folders" = "暂无文件夹";
+"settings.folders.no_folders_hint" = "添加文件夹以开始同步到 Google Drive";
+"settings.folders.add_folder" = "添加文件夹";
+"settings.folders.enabled" = "已启用";
+"settings.folders.edit" = "编辑...";
+"settings.folders.never" = "从未";
+
+// MARK: - 添加/编辑文件夹
+"settings.folder.add_title" = "添加同步文件夹";
+"settings.folder.edit_title" = "编辑同步文件夹";
+"settings.folder.local_folder" = "本地文件夹";
+"settings.folder.select_folder" = "选择文件夹...";
+"settings.folder.browse" = "浏览...";
+"settings.folder.drive_account" = "Google Drive 账户";
+"settings.folder.select" = "选择...";
+"settings.folder.dest_folder_optional" = "目标文件夹（可选）";
+"settings.folder.dest_folder" = "目标文件夹";
+"settings.folder.leave_empty" = "留空则同步到根目录";
+"settings.folder.remote_path" = "远程路径";
+"settings.folder.dest_hint" = "留空将同步到 Drive 根目录。\n或输入文件夹路径（例如「Backups/MyMac」）。";
+"settings.folder.exclude_patterns" = "排除规则";
+"settings.folder.exclude_hint" = "排除不需要同步的文件或文件夹（例如「node_modules」、「.git」、「*.tmp」）。";
+
+// MARK: - 账户设置
+"settings.accounts.connect_title" = "连接 Google Drive";
+"settings.accounts.connect_hint" = "使用您的 Google 账户登录以开始同步文件夹。";
+"settings.accounts.connect_button" = "连接 Google Drive";
+"settings.accounts.browser_hint" = "将在浏览器中打开登录页面。";
+"settings.accounts.google_drive" = "Google Drive";
+"settings.accounts.connected" = "已连接";
+"settings.accounts.rename" = "重命名...";
+"settings.accounts.remove" = "移除账户";
+"settings.accounts.add_another" = "添加其他账户";
+"settings.accounts.connecting" = "正在连接 Google Drive...";
+"settings.accounts.complete_signin" = "请在浏览器中完成登录，然后返回此处。";
+"settings.accounts.connected_success" = "账户已连接！";
+"settings.accounts.name_prompt" = "为此账户命名：";
+"settings.accounts.name_placeholder" = "例如：工作、个人、john@gmail.com";
+"settings.accounts.name_hint" = "便于您识别这是哪个 Google 账户。";
+"settings.accounts.rename_failed" = "重命名失败。账户仍以「%@」连接。";
+
+// MARK: - 重命名账户
+"settings.accounts.rename_title" = "重命名账户";
+"settings.accounts.current_name" = "当前名称：%@";
+"settings.accounts.new_name" = "新名称";
+"settings.accounts.rename_error" = "重命名账户失败";
+
+// MARK: - 通用设置
+"settings.general.theme" = "主题";
+"settings.general.appearance" = "外观";
+"settings.general.language" = "语言";
+"settings.general.sync_schedule" = "同步计划";
+"settings.general.sync_interval" = "同步间隔";
+"settings.general.sync_on_launch" = "启动时同步";
+"settings.general.app_behavior" = "应用行为";
+"settings.general.show_notifications" = "同步后显示通知";
+"settings.general.notify_error" = "错误时通知";
+"settings.general.launch_login" = "登录时启动";
+"settings.general.about" = "关于";
+"settings.general.auto_updates" = "自动检查更新";
+"settings.general.check_updates" = "检查更新";
+"settings.general.version" = "版本";
+"settings.general.update_available" = "有可用更新";
+"settings.general.update_message" = "新版本（%@）已发布。";
+"settings.general.get_update" = "获取更新";
+"settings.general.up_to_date" = "已是最新版本";
+"settings.general.up_to_date_message" = "您正在使用最新版本。";
+"settings.general.update_error" = "错误";
+"settings.general.update_error_message" = "检查更新失败，请稍后再试。";
+"settings.general.reset_title" = "重置所有设置？";
+"settings.general.reset_confirm" = "重置所有";
+"settings.general.reset_message" = "这将移除应用中所有同步文件夹和 Google Drive 账户连接。此操作不可撤销。";
+
+// MARK: - 状态
+"status.syncing" = "同步中...";
+"status.all_synced" = "已全部同步";
+"status.never_synced" = "从未同步";
+"status.last_sync_now" = "上次同步：刚刚";
+"status.last_sync_min" = "上次同步：%d 分钟前";
+"status.last_sync_hr" = "上次同步：%d 小时前";
+"status.last_sync_day" = "上次同步：%d 天前";
+"status.last_sync_days" = "上次同步：%d 天前";
+"status.last_sync_relative" = "上次同步：%@";
+
+// MARK: - 同步管理
+"sync.rclone_not_installed" = "rclone 未安装";
+"sync.syncing_folder" = "正在同步 %@...";
+"sync.syncing" = "同步中...";
+"sync.folders_failed" = "%d 个文件夹同步失败";
+"sync.ready" = "就绪";
+"sync.cancelling" = "正在取消...";
+"sync.finishing" = "即将完成...";
+"sync.failed_title" = "同步失败";
+"sync.failed_body" = "%d 个文件夹遇到错误";
+"sync.complete_title" = "同步完成";
+"sync.complete_body" = "%d 个文件夹同步成功";
+"sync.update_available" = "有可用更新";
+"sync.update_body" = "版本 %@ 已在 GitHub 发布。";
+
+// MARK: - 枚举
+"enum.appearance.light" = "浅色";
+"enum.appearance.dark" = "深色";
+"enum.appearance.auto" = "自动";
+"enum.interval.manual" = "仅手动";
+"enum.interval.15min" = "每 15 分钟";
+"enum.interval.30min" = "每 30 分钟";
+"enum.interval.hourly" = "每小时";
+"enum.interval.daily" = "每天一次";
+"enum.interval.custom" = "每 %d 分钟";
+"enum.language.system" = "系统";
+"enum.language.en" = "English";
+"enum.language.zhHans" = "简体中文";
+
+// MARK: - 错误
+"error.not_installed" = "rclone 未安装。请通过 Homebrew 安装：brew install rclone";
+"error.config_failed" = "配置失败：%@";
+"error.sync_failed" = "同步失败：%@";
+"error.invalid_remote" = "无效的远程：%@";
+
+// MARK: - 通知
+"notification.show_logs" = "查看日志";

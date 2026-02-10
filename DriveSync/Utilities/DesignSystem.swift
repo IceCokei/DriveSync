@@ -289,6 +289,14 @@ enum SettingsTab: String, CaseIterable {
     case accounts = "Accounts"
     case general = "Settings"
 
+    var localizedName: String {
+        switch self {
+        case .folders: return "settings.tab.folders".localized
+        case .accounts: return "settings.tab.accounts".localized
+        case .general: return "settings.tab.settings".localized
+        }
+    }
+
     var iconName: String {
         switch self {
         case .folders: return "FolderIcon"
@@ -315,7 +323,7 @@ struct DSTabBar: View {
                             .frame(width: 16, height: 16)
                             .foregroundStyle(selectedTab == tab ? Color.dsTextPrimary : Color.dsTextSecondary)
 
-                        Text(tab.rawValue)
+                        Text(tab.localizedName)
                             .font(DSTypography.body.font)
                     }
                     .foregroundStyle(selectedTab == tab ? Color.dsTextPrimary : Color.dsTextSecondary)

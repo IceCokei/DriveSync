@@ -13,7 +13,13 @@ enum AppearanceMode: String, Codable, Equatable, CaseIterable {
     case dark = "Dark"
     case auto = "Auto"
 
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .light: return "enum.appearance.light".localized
+        case .dark: return "enum.appearance.dark".localized
+        case .auto: return "enum.appearance.auto".localized
+        }
+    }
 
     var colorScheme: ColorScheme? {
         switch self {
@@ -46,12 +52,12 @@ enum SyncInterval: Codable, Equatable, Hashable, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .manual: return "Manual Only"
-        case .minutes15: return "Every 15 minutes"
-        case .minutes30: return "Every 30 minutes"
-        case .hourly: return "Every Hour"
-        case .daily: return "Once a Day"
-        case .custom(let minutes): return "Every \(minutes) minutes"
+        case .manual: return "enum.interval.manual".localized
+        case .minutes15: return "enum.interval.15min".localized
+        case .minutes30: return "enum.interval.30min".localized
+        case .hourly: return "enum.interval.hourly".localized
+        case .daily: return "enum.interval.daily".localized
+        case .custom(let minutes): return "enum.interval.custom".localized(with: minutes)
         }
     }
     
@@ -77,10 +83,11 @@ struct AppSettings: Codable, Equatable {
     var dailySyncTime: Date  // Time of day for daily syncs (only hour/minute matter)
     var checkUpdatesAutomatically: Bool
     var appearanceMode: AppearanceMode
-    
+    var language: AppLanguage
+
     static let defaultRclonePath = "/opt/homebrew/bin/rclone"
     static let intelRclonePath = "/usr/local/bin/rclone"
-    
+
     /// Default sync time: 9:00 AM
     static var defaultDailySyncTime: Date {
         var components = DateComponents()
@@ -88,7 +95,7 @@ struct AppSettings: Codable, Equatable {
         components.minute = 0
         return Calendar.current.date(from: components) ?? Date()
     }
-    
+
     init(
         syncInterval: SyncInterval = .hourly,
         rclonePath: String = AppSettings.defaultRclonePath,
@@ -98,7 +105,8 @@ struct AppSettings: Codable, Equatable {
         syncOnLaunch: Bool = true,
         dailySyncTime: Date? = nil,
         checkUpdatesAutomatically: Bool = true,
-        appearanceMode: AppearanceMode = .auto
+        appearanceMode: AppearanceMode = .auto,
+        language: AppLanguage = .system
     ) {
         self.syncInterval = syncInterval
         self.rclonePath = rclonePath
@@ -109,6 +117,22 @@ struct AppSettings: Codable, Equatable {
         self.dailySyncTime = dailySyncTime ?? AppSettings.defaultDailySyncTime
         self.checkUpdatesAutomatically = checkUpdatesAutomatically
         self.appearanceMode = appearanceMode
+        self.language = language
+    }
+
+    // Custom Codable: backward-compatible with saved data that lacks the "language" key
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        syncInterval = try container.decode(SyncInterval.self, forKey: .syncInterval)
+        rclonePath = try container.decode(String.self, forKey: .rclonePath)
+        showNotifications = try container.decode(Bool.self, forKey: .showNotifications)
+        notifyOnError = try container.decode(Bool.self, forKey: .notifyOnError)
+        launchAtLogin = try container.decode(Bool.self, forKey: .launchAtLogin)
+        syncOnLaunch = try container.decode(Bool.self, forKey: .syncOnLaunch)
+        dailySyncTime = try container.decode(Date.self, forKey: .dailySyncTime)
+        checkUpdatesAutomatically = try container.decode(Bool.self, forKey: .checkUpdatesAutomatically)
+        appearanceMode = try container.decode(AppearanceMode.self, forKey: .appearanceMode)
+        language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
     }
     
     static func detectRclonePath() -> String? {
