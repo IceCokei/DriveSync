@@ -6,6 +6,31 @@
 //
 
 import Foundation
+import SwiftUI
+
+enum AppearanceMode: String, Codable, Equatable, CaseIterable {
+    case light = "Light"
+    case dark = "Dark"
+    case auto = "Auto"
+
+    var displayName: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .light: return .light
+        case .dark: return .dark
+        case .auto: return nil  // System default
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        case .auto: return "circle.lefthalf.filled"
+        }
+    }
+}
 
 enum SyncInterval: Codable, Equatable, Hashable, CaseIterable {
     case manual
@@ -51,6 +76,7 @@ struct AppSettings: Codable, Equatable {
     var syncOnLaunch: Bool
     var dailySyncTime: Date  // Time of day for daily syncs (only hour/minute matter)
     var checkUpdatesAutomatically: Bool
+    var appearanceMode: AppearanceMode
     
     static let defaultRclonePath = "/opt/homebrew/bin/rclone"
     static let intelRclonePath = "/usr/local/bin/rclone"
@@ -71,7 +97,8 @@ struct AppSettings: Codable, Equatable {
         launchAtLogin: Bool = false,
         syncOnLaunch: Bool = true,
         dailySyncTime: Date? = nil,
-        checkUpdatesAutomatically: Bool = true
+        checkUpdatesAutomatically: Bool = true,
+        appearanceMode: AppearanceMode = .auto
     ) {
         self.syncInterval = syncInterval
         self.rclonePath = rclonePath
@@ -81,6 +108,7 @@ struct AppSettings: Codable, Equatable {
         self.syncOnLaunch = syncOnLaunch
         self.dailySyncTime = dailySyncTime ?? AppSettings.defaultDailySyncTime
         self.checkUpdatesAutomatically = checkUpdatesAutomatically
+        self.appearanceMode = appearanceMode
     }
     
     static func detectRclonePath() -> String? {

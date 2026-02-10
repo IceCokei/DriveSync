@@ -9,26 +9,42 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
-    
+    @Environment(\.colorScheme) var colorScheme
+    @State private var selectedTab: SettingsTab = .folders
+
     var body: some View {
-        TabView {
-            FoldersSettingsView()
-                .tabItem {
-                    Label("Folders", systemImage: "folder")
-                }
-                .environmentObject(syncManager)
-            
-            AccountsSettingsView()
-                .tabItem {
-                    Label("Accounts", systemImage: "person.crop.circle")
-                }
-                .environmentObject(syncManager)
-            
-            GeneralSettingsView()
-                .tabItem {
-                    Label("General", systemImage: "gear")
-                }
-                .environmentObject(syncManager)
+        VStack(spacing: 0) {
+            // Custom Tab Bar
+            HStack {
+                Spacer()
+                DSTabBar(selectedTab: $selectedTab)
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .background(colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
+
+            Divider()
+
+            // Content
+            ZStack {
+                (colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
+                    .ignoresSafeArea()
+
+                FoldersSettingsView()
+                    .environmentObject(syncManager)
+                    .opacity(selectedTab == .folders ? 1 : 0)
+                    .zIndex(selectedTab == .folders ? 1 : 0)
+
+                AccountsSettingsView()
+                    .environmentObject(syncManager)
+                    .opacity(selectedTab == .accounts ? 1 : 0)
+                    .zIndex(selectedTab == .accounts ? 1 : 0)
+
+                GeneralSettingsView()
+                    .environmentObject(syncManager)
+                    .opacity(selectedTab == .general ? 1 : 0)
+                    .zIndex(selectedTab == .general ? 1 : 0)
+            }
         }
         .frame(width: 500, height: 600)
     }
@@ -41,87 +57,94 @@ struct FoldersSettingsView: View {
     @State private var showingAddSheet = false
     @State private var showingAddAccountSheet = false
     @State private var selectedFolder: SyncFolder?
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Toolbar
-            HStack {
-                Text("Sync Folders")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Button {
-                    showingAddSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .disabled(syncManager.availableRemotes.isEmpty)
-                .help(syncManager.availableRemotes.isEmpty ? "Add a Google Drive account first" : "Add folder")
-            }
-            
-            if syncManager.folders.isEmpty {
+        VStack(spacing: 0) {
+            // Content area
+            VStack(alignment: .leading, spacing: 16) {
+                if syncManager.folders.isEmpty {
                 if syncManager.availableRemotes.isEmpty {
-                    // No accounts configured yet - show big connect button
+                    // No accounts configured yet - prompt to go to Accounts tab
                     VStack(spacing: 20) {
                         Spacer()
-                        
-                        Image(systemName: "cloud.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.blue)
-                        
-                        Text("Connect to Google Drive")
+
+                        Image("CloudServerIcon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 70, height: 70)
+
+                        Text("No accounts connected")
                             .font(.title2)
                             .fontWeight(.semibold)
-                        
-                        Text("Sign in with your Google account to start syncing folders.")
+
+                        Text("Connect your Google Drive account in the Accounts tab to start syncing folders.")
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
-                        
-                        Button {
-                            showingAddAccountSheet = true
-                        } label: {
-                            Label("Connect Google Drive", systemImage: "link")
-                                .font(.headline)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        
-                        Text("This will open your browser to sign in.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
+
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     // Has accounts, no folders
-                    ContentUnavailableView {
-                        Label("No Folders", systemImage: "folder")
-                    } description: {
+                    VStack(spacing: 16) {
+                        Spacer()
+
+                        Image("FolderIcon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 60, height: 60)
+
+                        Text("No Folders")
+                            .font(.title3)
+                            .foregroundStyle(Color.dsTextPrimary)
+
                         Text("Add a folder to start syncing to Google Drive")
-                    } actions: {
-                        Button("Add Folder") {
+                            .font(.body)
+                            .foregroundStyle(Color.dsTextSecondary)
+
+                        Button {
                             showingAddSheet = true
+                        } label: {
+                            Text("Add Folder")
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 8)
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(Color.dsPrimary)
+                        .cornerRadius(10)
+
+                        Spacer()
                     }
-                    .frame(maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } else {
-                List(syncManager.folders) { folder in
-                    FolderSettingsRow(folder: folder, onEdit: {
-                        selectedFolder = folder
-                    })
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(syncManager.folders) { folder in
+                            FolderSettingsRow(folder: folder, onEdit: {
+                                selectedFolder = folder
+                            })
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
                 }
-                .listStyle(.inset)
+            }
+            }
+
+            Spacer()
+
+            // Bottom status bar
+            if !syncManager.folders.isEmpty {
+                DSStatusBar(
+                    statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                    statusColor: syncManager.isSyncing ? .orange : .green,
+                    lastSyncText: lastSyncText
+                )
             }
         }
-        .padding()
         .sheet(isPresented: $showingAddSheet) {
             AddFolderSheet()
                 .environmentObject(syncManager)
@@ -135,124 +158,144 @@ struct FoldersSettingsView: View {
                 .environmentObject(syncManager)
         }
     }
+
+    private var lastSyncText: String {
+        guard let mostRecentSync = syncManager.folders
+            .compactMap({ $0.lastSyncDate })
+            .max() else {
+            return "Never synced"
+        }
+
+        let interval = Date().timeIntervalSince(mostRecentSync)
+        if interval < 60 {
+            return "Last sync: just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "Last sync: \(minutes) min ago"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "Last sync: \(hours) hr ago"
+        } else {
+            let days = Int(interval / 86400)
+            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+        }
+    }
 }
 
 struct FolderSettingsRow: View {
     let folder: SyncFolder
     let onEdit: () -> Void
     @EnvironmentObject var syncManager: SyncManager
-    
+
     @State private var showingErrorPopover = false
-    
+
+    private var statusIcon: String {
+        folder.lastSyncStatus == .success ? "checkmark.circle.fill" : "circle"
+    }
+
+    private var statusColor: Color {
+        folder.lastSyncStatus == .success ? .green : Color.dsTextTertiary
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            // Status Icon
-            Button {
-                if folder.lastSyncStatus == .error {
-                    showingErrorPopover = true
+            // Large folder icon
+            Image(systemName: "folder.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(.blue)
+
+            // Folder info
+            VStack(alignment: .leading, spacing: 4) {
+                // Name + Status
+                HStack(spacing: 6) {
+                    Text(folder.displayName)
+                        .font(DSTypography.body.font)
+                        .foregroundStyle(Color.dsTextPrimary)
+
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(statusColor)
                 }
-            } label: {
-                Group {
-                    switch folder.lastSyncStatus {
-                    case .idle:
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundStyle(.tertiary)
-                    case .syncing:
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundStyle(.blue)
-                    case .success:
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    case .error:
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    }
+
+                // Local path with folder icon
+                HStack(spacing: 4) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.dsTextTertiary)
+
+                    Text(folder.localPath)
+                        .font(DSTypography.caption.font)
+                        .foregroundStyle(Color.dsTextSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
-                .font(.system(size: 16))
-                .frame(width: 20)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showingErrorPopover) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sync Failed")
-                        .font(.headline)
-                        .foregroundStyle(.red)
-                    
-                    if let error = folder.lastError {
-                        ScrollView {
-                            Text(error)
-                                .font(.caption)
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(maxHeight: 200)
-                    } else {
-                        Text("Unknown error occurred.")
-                            .font(.caption)
-                    }
+
+                // Cloud path with cloud icon
+                HStack(spacing: 4) {
+                    Image(systemName: "cloud")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.dsTextTertiary)
+
+                    Text(folder.fullRemotePath.trimmingCharacters(in: CharacterSet(charactersIn: ":")))
+                        .font(DSTypography.caption.font)
+                        .foregroundStyle(Color.dsTextSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
-                .padding()
-                .frame(width: 300)
             }
 
-            // Folder info (takes available space)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(folder.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .lineLimit(1)
-                
-                Text(folder.localPath)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                
-                Text(folder.fullRemotePath.trimmingCharacters(in: CharacterSet(charactersIn: ":")))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            
-            Spacer(minLength: 8)
-            
-            // Controls (fixed width)
-            HStack(spacing: 12) {
-                Toggle("", isOn: Binding(
-                    get: { folder.isEnabled },
-                    set: { newValue in
-                        var updated = folder
-                        updated.isEnabled = newValue
-                        syncManager.updateFolder(updated)
-                    }
-                ))
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .labelsHidden()
-                
-                Button {
-                    onEdit()
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                
-                Button {
-                    syncManager.removeFolder(folder)
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
+            Spacer()
+
+            // Timestamp
+            if let lastSync = folder.lastSyncDate {
+                Text(lastSync, style: .relative)
+                    .font(DSTypography.caption.font)
+                    .foregroundStyle(Color.dsTextTertiary)
+            } else {
+                Text("Never")
+                    .font(DSTypography.caption.font)
+                    .foregroundStyle(Color.dsTextTertiary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.primary.opacity(0.05))
-        .cornerRadius(8)
+        .padding(DesignTokens.spacingM)
+        .dsCard()
+        .contextMenu {
+            Button {
+                Task {
+                    await syncManager.syncFolder(folder)
+                }
+            } label: {
+                Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(syncManager.isSyncing || !folder.isEnabled)
+
+            Toggle(isOn: Binding(
+                get: { folder.isEnabled },
+                set: { newValue in
+                    var updated = folder
+                    updated.isEnabled = newValue
+                    syncManager.updateFolder(updated)
+                }
+            )) {
+                Label("Enabled", systemImage: "checkmark.circle")
+            }
+
+            Divider()
+
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit...", systemImage: "pencil")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                syncManager.removeFolder(folder)
+            } label: {
+                Label("Remove", systemImage: "trash")
+            }
+        }
     }
 }
 
@@ -261,6 +304,7 @@ struct FolderSettingsRow: View {
 struct AddFolderSheet: View {
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var localPath: String = ""
     @State private var selectedRemote: RcloneRemote?
@@ -269,115 +313,156 @@ struct AddFolderSheet: View {
     @State private var newPattern: String = ""
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Add Sync Folder")
-                .font(.headline)
+        ZStack {
+            (colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
+                .ignoresSafeArea()
 
-            Form {
-                Section {
-                    HStack {
-                        TextField("Local Folder", text: $localPath)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Button("Browse...") {
-                            selectFolder()
-                        }
-                    }
-                }
-                
-                Section {
-                    Picker("Google Drive Account", selection: $selectedRemote) {
-                        Text("Select...").tag(nil as RcloneRemote?)
-                        ForEach(syncManager.availableRemotes) { remote in
-                            Text(remote.displayName).tag(remote as RcloneRemote?)
-                        }
-                    }
-                    
-                    TextField("Destination Folder (optional)", text: $remotePath)
-                        .textFieldStyle(.roundedBorder)
+            VStack(spacing: 20) {
+                Text("Add Sync Folder")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.dsTextPrimary)
 
-                    Text("Leave empty to sync to the root of your Drive.\nOr type a folder path (e.g. 'Backups/MyMac').")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Local Folder Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Local Folder")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
 
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if excludePatterns.isEmpty {
-                            Text("No exclusions")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
-                                HStack {
-                                    Text(pattern)
-                                        .font(.system(.body, design: .monospaced))
-                                    Spacer()
-                                    Button {
-                                        excludePatterns.remove(at: index)
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
-                                    }
-                                    .buttonStyle(.plain)
+                            HStack {
+                                TextField("Select folder...", text: $localPath)
+                                    .textFieldStyle(.roundedBorder)
+
+                                Button("Browse...") {
+                                    selectFolder()
                                 }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color.dsPrimary)
+                                .controlSize(.small)
                             }
                         }
 
-                        HStack {
-                            TextField("e.g., node_modules or *.tmp", text: $newPattern)
+                        Divider()
+
+                        // Google Drive Account Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Google Drive Account")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Picker("", selection: $selectedRemote) {
+                                Text("Select...").tag(nil as RcloneRemote?)
+                                ForEach(syncManager.availableRemotes) { remote in
+                                    Text(remote.displayName).tag(remote as RcloneRemote?)
+                                }
+                            }
+                            .labelsHidden()
+
+                            Text("Destination Folder (optional)")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            TextField("Leave empty for root", text: $remotePath)
                                 .textFieldStyle(.roundedBorder)
-                                .onSubmit {
-                                    addPattern()
-                                }
 
-                            Button {
-                                addPattern()
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
+                            Text("Leave empty to sync to the root of your Drive.\nOr type a folder path (e.g. 'Backups/MyMac').")
+                                .font(DSTypography.caption.font)
+                                .foregroundStyle(Color.dsTextSecondary)
+                        }
+
+                        Divider()
+
+                        // Exclude Patterns Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Exclude Patterns")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            if !excludePatterns.isEmpty {
+                                VStack(spacing: 6) {
+                                    ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
+                                        HStack {
+                                            Text(pattern)
+                                                .font(.system(.body, design: .monospaced))
+                                                .foregroundStyle(Color.dsTextPrimary)
+
+                                            Spacer()
+
+                                            Button {
+                                                excludePatterns.remove(at: index)
+                                            } label: {
+                                                Image(systemName: "minus.circle.fill")
+                                                    .foregroundStyle(.red)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                        .padding(8)
+                                        .background(Color.dsMuted.opacity(0.3))
+                                        .cornerRadius(6)
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                            HStack(alignment: .center, spacing: 8) {
+                                TextField("*.tmp", text: $newPattern)
+                                    .textFieldStyle(.roundedBorder)
+                                    .onSubmit {
+                                        addPattern()
+                                    }
+
+                                Button {
+                                    addPattern()
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(Color.dsPrimary)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+                            }
+
+                            Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                                .font(DSTypography.caption.font)
+                                .foregroundStyle(Color.dsTextSecondary)
                         }
                     }
-
-                    Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Exclude Patterns")
+                    .padding(20)
                 }
-            }
-            .formStyle(.grouped)
 
-            HStack {
-                Button("Cancel") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
+                Divider()
 
-                Spacer()
-
-                Button("Add") {
-                    if let remote = selectedRemote {
-                        let folder = SyncFolder(
-                            localPath: localPath,
-                            remoteName: remote.name,
-                            remotePath: remotePath,
-                            excludePatterns: excludePatterns
-                        )
-                        syncManager.folders.append(folder)
-                        syncManager.saveFolders()
+                HStack {
+                    Button("Cancel") {
                         dismiss()
                     }
+                    .keyboardShortcut(.cancelAction)
+
+                    Spacer()
+
+                    Button("Add") {
+                        if let remote = selectedRemote {
+                            let folder = SyncFolder(
+                                localPath: localPath,
+                                remoteName: remote.name,
+                                remotePath: remotePath,
+                                excludePatterns: excludePatterns
+                            )
+                            syncManager.folders.append(folder)
+                            syncManager.saveFolders()
+                            dismiss()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.dsPrimary)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(localPath.isEmpty || selectedRemote == nil)
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(localPath.isEmpty || selectedRemote == nil)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
             }
         }
-        .padding()
-        .frame(width: 450, height: 500)
+        .frame(width: 500, height: 550)
     }
 
     private func addPattern() {
@@ -405,6 +490,7 @@ struct EditFolderSheet: View {
     let folder: SyncFolder
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var localPath: String = ""
     @State private var selectedRemote: RcloneRemote?
@@ -413,109 +499,150 @@ struct EditFolderSheet: View {
     @State private var newPattern: String = ""
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Edit Sync Folder")
-                .font(.headline)
+        ZStack {
+            (colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
+                .ignoresSafeArea()
 
-            Form {
-                Section {
-                    HStack {
-                        TextField("Local Folder", text: $localPath)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Button("Browse...") {
-                            selectFolder()
-                        }
-                    }
-                }
-                
-                Section {
-                    Picker("Google Drive Account", selection: $selectedRemote) {
-                        Text("Select...").tag(nil as RcloneRemote?)
-                        ForEach(syncManager.availableRemotes) { remote in
-                            Text(remote.displayName).tag(remote as RcloneRemote?)
-                        }
-                    }
-                    
-                    TextField("Remote Path", text: $remotePath)
-                        .textFieldStyle(.roundedBorder)
-                }
+            VStack(spacing: 20) {
+                Text("Edit Sync Folder")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.dsTextPrimary)
 
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if excludePatterns.isEmpty {
-                            Text("No exclusions")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
-                                HStack {
-                                    Text(pattern)
-                                        .font(.system(.body, design: .monospaced))
-                                    Spacer()
-                                    Button {
-                                        excludePatterns.remove(at: index)
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
-                                    }
-                                    .buttonStyle(.plain)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Local Folder Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Local Folder")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            HStack {
+                                TextField("Select folder...", text: $localPath)
+                                    .textFieldStyle(.roundedBorder)
+
+                                Button("Browse...") {
+                                    selectFolder()
                                 }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color.dsPrimary)
+                                .controlSize(.small)
                             }
                         }
 
-                        HStack {
-                            TextField("e.g., node_modules or *.tmp", text: $newPattern)
+                        Divider()
+
+                        // Google Drive Account Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Google Drive Account")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Picker("", selection: $selectedRemote) {
+                                Text("Select...").tag(nil as RcloneRemote?)
+                                ForEach(syncManager.availableRemotes) { remote in
+                                    Text(remote.displayName).tag(remote as RcloneRemote?)
+                                }
+                            }
+                            .labelsHidden()
+
+                            Text("Destination Folder")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            TextField("Remote path", text: $remotePath)
                                 .textFieldStyle(.roundedBorder)
-                                .onSubmit {
-                                    addPattern()
-                                }
+                        }
 
-                            Button {
-                                addPattern()
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
+                        Divider()
+
+                        // Exclude Patterns Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Exclude Patterns")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            if !excludePatterns.isEmpty {
+                                VStack(spacing: 6) {
+                                    ForEach(Array(excludePatterns.enumerated()), id: \.offset) { index, pattern in
+                                        HStack {
+                                            Text(pattern)
+                                                .font(.system(.body, design: .monospaced))
+                                                .foregroundStyle(Color.dsTextPrimary)
+
+                                            Spacer()
+
+                                            Button {
+                                                excludePatterns.remove(at: index)
+                                            } label: {
+                                                Image(systemName: "minus.circle.fill")
+                                                    .foregroundStyle(.red)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                        .padding(8)
+                                        .background(Color.dsMuted.opacity(0.3))
+                                        .cornerRadius(6)
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                            HStack(alignment: .center, spacing: 8) {
+                                TextField("*.tmp", text: $newPattern)
+                                    .textFieldStyle(.roundedBorder)
+                                    .onSubmit {
+                                        addPattern()
+                                    }
+
+                                Button {
+                                    addPattern()
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(Color.dsPrimary)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(newPattern.trimmingCharacters(in: .whitespaces).isEmpty)
+                            }
+
+                            Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
+                                .font(DSTypography.caption.font)
+                                .foregroundStyle(Color.dsTextSecondary)
                         }
                     }
-
-                    Text("Exclude files or folders from sync (e.g., 'node_modules', '.git', '*.tmp').")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Exclude Patterns")
+                    .padding(20)
                 }
-            }
-            .formStyle(.grouped)
 
-            HStack {
-                Button("Cancel") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
+                Divider()
 
-                Spacer()
-
-                Button("Save") {
-                    if let remote = selectedRemote {
-                        var updated = folder
-                        updated.localPath = localPath
-                        updated.remoteName = remote.name
-                        updated.remotePath = remotePath
-                        updated.excludePatterns = excludePatterns
-                        syncManager.updateFolder(updated)
+                HStack {
+                    Button("Cancel") {
                         dismiss()
                     }
+                    .keyboardShortcut(.cancelAction)
+
+                    Spacer()
+
+                    Button("Save") {
+                        if let remote = selectedRemote {
+                            var updated = folder
+                            updated.localPath = localPath
+                            updated.remoteName = remote.name
+                            updated.remotePath = remotePath
+                            updated.excludePatterns = excludePatterns
+                            syncManager.updateFolder(updated)
+                            dismiss()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.dsPrimary)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(localPath.isEmpty || selectedRemote == nil)
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(localPath.isEmpty || selectedRemote == nil)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
             }
         }
-        .padding()
-        .frame(width: 450, height: 500)
+        .frame(width: 500, height: 550)
         .onAppear {
             localPath = folder.localPath
             remotePath = folder.remotePath
@@ -562,10 +689,11 @@ struct AddAccountSheet: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: "cloud.fill")
-                .font(.system(size: 50))
-                .foregroundStyle(.blue)
-            
+            Image("CloudServerIcon")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 60, height: 60)
+
             switch step {
             case .connecting:
                 connectingView
@@ -701,95 +829,181 @@ struct AddAccountSheet: View {
 struct AccountsSettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
     @State private var showingAddAccountSheet = false
-    
+    @State private var showingRenameSheet = false
+    @State private var accountToRename: RcloneRemote?
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Google Drive Accounts")
-                .font(.headline)
-            
-            if syncManager.availableRemotes.isEmpty {
-                VStack(spacing: 16) {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                if syncManager.availableRemotes.isEmpty {
+                VStack(spacing: 20) {
                     Spacer()
-                    
-                    Image(systemName: "cloud.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.blue)
-                    
-                    Text("No accounts connected")
-                        .font(.title3)
-                    
+
+                    Image("CloudServerIcon")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 70, height: 70)
+
+                    Text("Connect to Google Drive")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+
+                    Text("Sign in with your Google account to start syncing folders.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
                     Button {
                         showingAddAccountSheet = true
                     } label: {
                         Label("Connect Google Drive", systemImage: "link")
+                            .font(.headline)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.borderedProminent)
-                    
+                    .tint(Color.dsPrimary)
+                    .controlSize(.large)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.radiusL))
+
+                    Text("This will open your browser to sign in.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(syncManager.availableRemotes) { remote in
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        
-                        VStack(alignment: .leading) {
-                            Text(remote.name)
-                                .font(.body)
-                            Text("Google Drive")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        // Account cards
+                        ForEach(syncManager.availableRemotes) { remote in
+                            HStack(alignment: .center, spacing: 16) {
+                                // Drive icon
+                                Image("DriveIcon")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 32, height: 32)
+
+                                // Account info
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(remote.name)
+                                        .font(DSTypography.body.font)
+                                        .foregroundStyle(Color.dsTextPrimary)
+
+                                    Text("Google Drive")
+                                        .font(DSTypography.caption.font)
+                                        .foregroundStyle(Color.dsTextSecondary)
+                                }
+
+                                Spacer()
+
+                                // Connected badge
+                                HStack(spacing: 2) {
+                                    Image("DotIcon")
+                                        .resizable()
+                                        .renderingMode(.template)
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundStyle(Color.green)
+
+                                    Text("Connected")
+                                        .font(DSTypography.caption.font)
+                                        .foregroundStyle(Color.dsTextSecondary)
+                                }
+                            }
+                            .padding(DesignTokens.spacingM)
+                            .dsCard()
+                            .contextMenu {
+                                Button {
+                                    accountToRename = remote
+                                    showingRenameSheet = true
+                                } label: {
+                                    Label("Rename...", systemImage: "pencil")
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive) {
+                                    Task {
+                                        await syncManager.deleteRemote(name: remote.name)
+                                    }
+                                } label: {
+                                    Label("Remove Account", systemImage: "trash")
+                                }
+                            }
                         }
-                        
-                        Spacer()
-                        
-                        Text("Connected")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
-                    .padding(.vertical, 4)
-                    .contextMenu {
+
+                        // Add Another Account button (dashed border)
                         Button {
-                            accountToRename = remote
-                            showingRenameSheet = true
+                            showingAddAccountSheet = true
                         } label: {
-                            Label("Rename...", systemImage: "pencil")
+                            HStack {
+                                Spacer()
+
+                                Image("PlusIcon")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 16, height: 16)
+
+                                Text("Add Another Account")
+                                    .font(DSTypography.body.font)
+
+                                Spacer()
+                            }
+                            .padding(DesignTokens.spacingM)
+                            .background(
+                                RoundedRectangle(cornerRadius: DesignTokens.radiusM)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                                    .foregroundStyle(Color.dsBorder)
+                            )
                         }
-                        
-                        Divider()
-                        
-                        Button(role: .destructive) {
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.dsTextPrimary)
+
+                        // Refresh button
+                        Button {
                             Task {
-                                await syncManager.deleteRemote(name: remote.name)
+                                await syncManager.refreshRemotes()
                             }
                         } label: {
-                            Label("Remove Account", systemImage: "trash")
+                            HStack {
+                                Spacer()
+
+                                Image("RefreshIcon")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 14, height: 14)
+
+                                Text("Refresh")
+                                    .font(DSTypography.body.font)
+
+                                Spacer()
+                            }
+                            .padding(DesignTokens.spacingM)
                         }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.dsPrimary)
+                        .dsCard()
                     }
-                }
-                .listStyle(.inset)
-                
-                Divider()
-                
-                HStack {
-                    Button {
-                        showingAddAccountSheet = true
-                    } label: {
-                        Label("Add Another Account", systemImage: "plus")
-                    }
-                    
-                    Spacer()
-                    
-                    Button("Refresh") {
-                        Task {
-                            await syncManager.refreshRemotes()
-                        }
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
                 }
             }
+            }
+
+            Spacer()
+
+            // Bottom status bar
+            if !syncManager.availableRemotes.isEmpty {
+                DSStatusBar(
+                    statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                    statusColor: syncManager.isSyncing ? .orange : .green,
+                    lastSyncText: lastSyncText
+                )
+            }
         }
-        .padding()
         .sheet(isPresented: $showingAddAccountSheet) {
             AddAccountSheet()
                 .environmentObject(syncManager)
@@ -806,9 +1020,28 @@ struct AccountsSettingsView: View {
             }
         }
     }
-    
-    @State private var showingRenameSheet = false
-    @State private var accountToRename: RcloneRemote?
+
+    private var lastSyncText: String {
+        guard let mostRecentSync = syncManager.folders
+            .compactMap({ $0.lastSyncDate })
+            .max() else {
+            return "Never synced"
+        }
+
+        let interval = Date().timeIntervalSince(mostRecentSync)
+        if interval < 60 {
+            return "Last sync: just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "Last sync: \(minutes) min ago"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "Last sync: \(hours) hr ago"
+        } else {
+            let days = Int(interval / 86400)
+            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+        }
+    }
 }
 
 // MARK: - Rename Account Sheet
@@ -909,89 +1142,213 @@ struct GeneralSettingsView: View {
     
     // Advanced / Reset state
     @State private var showingResetConfirmation = false
-    
+
     var body: some View {
-        Form {
-            Section {
-                Picker("Sync Interval", selection: $syncManager.settings.syncInterval) {
-                    ForEach(SyncInterval.allCases, id: \.self) { interval in
-                        Text(interval.displayName).tag(interval)
-                    }
-                }
-                
-                // Show time picker only when "Once a Day" is selected
-                if case .daily = syncManager.settings.syncInterval {
-                    DatePicker(
-                        "Sync Time",
-                        selection: $syncManager.settings.dailySyncTime,
-                        displayedComponents: .hourAndMinute
-                    )
-                    
-                    Text("Next sync: \(nextSyncDescription)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Toggle("Sync when app launches", isOn: $syncManager.settings.syncOnLaunch)
-            } header: {
-                Text("Sync Schedule")
-            }
-            
-            Section {
-                Toggle("Show notifications after sync", isOn: $syncManager.settings.showNotifications)
-                
-                Toggle("Notify on Error", isOn: $syncManager.settings.notifyOnError)
-                
-                Toggle("Launch at login", isOn: $syncManager.settings.launchAtLogin)
-            } header: {
-                Text("App Behavior")
-            }
-            
-            Section {
-                Toggle("Automatically check for updates", isOn: $syncManager.settings.checkUpdatesAutomatically)
-                
-                Button {
-                    checkForUpdates()
-                } label: {
-                    if isCheckingForUpdates {
+        VStack(spacing: 0) {
+            ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Theme Section
+                VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
+                    DSSectionHeader(title: "Theme")
+
+                    VStack(spacing: 0) {
                         HStack {
-                            Text("Checking...")
-                            ProgressView()
+                            Text("Appearance")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Picker("", selection: $syncManager.settings.appearanceMode) {
+                                ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 180)
+                        }
+                        .padding(DesignTokens.spacingM)
+                    }
+                    .dsCard()
+                }
+
+                // Sync Schedule Section
+                VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
+                    DSSectionHeader(title: "Sync Schedule")
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Sync Interval")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Picker("", selection: $syncManager.settings.syncInterval) {
+                                ForEach(SyncInterval.allCases, id: \.self) { interval in
+                                    Text(interval.displayName).tag(interval)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 140)
+                        }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        HStack {
+                            Text("Sync when app launches")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Toggle("", isOn: $syncManager.settings.syncOnLaunch)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
                                 .controlSize(.small)
                         }
-                    } else {
-                        Text("Check for Updates")
+                        .padding(DesignTokens.spacingM)
                     }
+                    .dsCard()
                 }
-                .disabled(isCheckingForUpdates)
-                .alert(updateAlertTitle, isPresented: $showingUpdateAlert) {
-                    if let url = updateURL {
-                        Button("Get Update") {
-                            NSWorkspace.shared.open(url)
+
+                // App Behavior Section
+                VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
+                    DSSectionHeader(title: "App Behavior")
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Show notifications after sync")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Toggle("", isOn: $syncManager.settings.showNotifications)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                                .controlSize(.small)
                         }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        HStack {
+                            Text("Notify on Error")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Toggle("", isOn: $syncManager.settings.notifyOnError)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        HStack {
+                            Text("Launch at login")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Toggle("", isOn: $syncManager.settings.launchAtLogin)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+                        .padding(DesignTokens.spacingM)
                     }
-                    Button("OK", role: .cancel) { }
-                } message: {
-                    Text(updateAlertMessage)
+                    .dsCard()
                 }
-                
 
-                
-                HStack {
-                    Text("Version")
-                    Spacer()
-                    Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
-                        .foregroundStyle(.secondary)
+                // About Section
+                VStack(alignment: .leading, spacing: DesignTokens.spacingM) {
+                    DSSectionHeader(title: "About")
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Automatically check for updates")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Toggle("", isOn: $syncManager.settings.checkUpdatesAutomatically)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        HStack {
+                            Text("Check for Updates")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            if isCheckingForUpdates {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Button("Check") {
+                                    checkForUpdates()
+                                }
+                                .buttonStyle(.plain)
+                                .font(DSTypography.caption.font)
+                                .foregroundStyle(Color.dsPrimary)
+                            }
+                        }
+                        .padding(DesignTokens.spacingM)
+
+                        Divider()
+
+                        HStack {
+                            Text("Version")
+                                .font(DSTypography.body.font)
+                                .foregroundStyle(Color.dsTextPrimary)
+
+                            Spacer()
+
+                            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(Color.dsTextSecondary)
+                        }
+                        .padding(DesignTokens.spacingM)
+                    }
+                    .dsCard()
                 }
-                
-            } header: {
-                Text("About")
             }
-            
-
+            .padding(20)
         }
-        .formStyle(.grouped)
-        .padding()
+
+        Spacer()
+
+        // Bottom status bar
+        DSStatusBar(
+                statusText: syncManager.isSyncing ? "Syncing..." : "All synced",
+                statusColor: syncManager.isSyncing ? .orange : .green,
+                lastSyncText: lastSyncText
+            )
+        }
+        .alert(updateAlertTitle, isPresented: $showingUpdateAlert) {
+            if let url = updateURL {
+                Button("Get Update") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(updateAlertMessage)
+        }
         .onChange(of: syncManager.settings) { _, _ in
             syncManager.saveSettings()
         }
@@ -1060,6 +1417,28 @@ struct GeneralSettingsView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: nextSync)
+    }
+
+    private var lastSyncText: String {
+        guard let mostRecentSync = syncManager.folders
+            .compactMap({ $0.lastSyncDate })
+            .max() else {
+            return "Never synced"
+        }
+
+        let interval = Date().timeIntervalSince(mostRecentSync)
+        if interval < 60 {
+            return "Last sync: just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "Last sync: \(minutes) min ago"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "Last sync: \(hours) hr ago"
+        } else {
+            let days = Int(interval / 86400)
+            return "Last sync: \(days) day\(days > 1 ? "s" : "") ago"
+        }
     }
 }
 

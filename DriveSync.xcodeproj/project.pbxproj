@@ -16,6 +16,7 @@
 		4A1234560007 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1234550007 /* AppSettings.swift */; };
 		4A1234560008 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1234550008 /* ProcessRunner.swift */; };
 		4A1234560009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4A1234550009 /* Assets.xcassets */; };
+		4A123456000C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A123455000C /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		4A1234550009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4A123455000A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4A123455000B /* DriveSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DriveSync.entitlements; sourceTree = "<group>"; };
+		4A123455000C /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				4A1234550008 /* ProcessRunner.swift */,
+				4A123455000C /* DesignSystem.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -187,6 +190,7 @@
 				4A1234560006 /* SyncFolder.swift in Sources */,
 				4A1234560007 /* AppSettings.swift in Sources */,
 				4A1234560008 /* ProcessRunner.swift in Sources */,
+				4A123456000C /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -332,7 +336,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coke.drivesync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -361,7 +365,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coke.drivesync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

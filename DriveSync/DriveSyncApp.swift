@@ -19,14 +19,16 @@ struct DriveSyncApp: App {
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(syncManager)
+                .preferredColorScheme(syncManager.settings.appearanceMode.colorScheme)
         } label: {
             Image(systemName: syncManager.statusIcon)
         }
         .menuBarExtraStyle(.window)
-        
+
         Settings {
             SettingsView()
                 .environmentObject(syncManager)
+                .preferredColorScheme(syncManager.settings.appearanceMode.colorScheme)
         }
     }
 }

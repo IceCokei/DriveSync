@@ -445,8 +445,11 @@ class SyncManager: ObservableObject {
         syncProgress = ""
         syncProgressPercent = nil
         isSyncing = false
-        
+
         saveFolders()
+
+        // Send notification for single folder sync
+        await sendSyncNotification([folders[index]])
     }
     
     /// Resolve correct path for Volumes that might have a suffix (e.g. /Volumes/Name-1)
@@ -699,10 +702,10 @@ class SyncManager: ObservableObject {
     /// Check for updates via GitHub API
     /// Returns: (isUpdateAvailable, latestVersion, releaseURL)
     func checkForUpdates() async throws -> (Bool, String, URL?) {
-        let url = URL(string: "https://api.github.com/repos/saihgupr/DriveSync/releases/latest")!
+        let url = URL(string: "https://api.github.com/repos/IceCokei/DriveSync/releases/latest")!
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.setValue("DriveSync/1.0.1", forHTTPHeaderField: "User-Agent")
+        request.setValue("DriveSync/1.0.2", forHTTPHeaderField: "User-Agent")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         

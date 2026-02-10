@@ -7,20 +7,6 @@
 
 DriveSync lets you sync local folders to Google Drive right from your Mac menu bar — lightweight, intuitive, and zero configuration required.
 
-<p align="center">
-  <img src="Images/SCR-20260203-jwxr.jpeg" width="700" alt="DriveSync Menu Bar" />
-</p>
-
-<p align="center">
-  <img src="Images/Screenshot%202026-02-03%20at%2010.49.20%E2%80%AFAM.png" width="45%" />
-  <img src="Images/Screenshot%202026-02-03%20at%2010.49.23%E2%80%AFAM.png" width="45%" />
-</p>
-
-<p align="center">
-  <img src="Images/Screenshot%202026-02-03%20at%2010.49.26%E2%80%AFAM.png" width="45%" />
-  <img src="Images/Screenshot%202026-02-03%20at%2011.36.49%E2%80%AFAM.png" width="45%" />
-</p>
-
 ## Highlights
 
 - **Tiny Footprint** — ~80MB total (10x smaller than the official Google Drive app)
@@ -86,3 +72,13 @@ This project is forked from [GoogleDriveSync](https://github.com/saihgupr/Google
 Found a bug or have a feature request? [Open an issue](https://github.com/IceCokei/DriveSync/issues) on GitHub.
 
 If you find this project useful, consider giving it a ⭐!
+
+## Star History
+
+<a href="https://www.star-history.com/#IceCokei/DriveSync&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=IceCokei/DriveSync&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=IceCokei/DriveSync&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=IceCokei/DriveSync&type=date&legend=top-left" />
+ </picture>
+</a>
