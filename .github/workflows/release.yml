@@ -114,7 +114,7 @@ jobs:
           done <<< "$COMMITS"
 
           # 构建 Release Notes
-          RELEASE_NOTES="## 🎉 DriveSync ${GITHUB_REF_NAME}\n\n"
+          RELEASE_NOTES=""
 
           if [ -n "$FEATURES" ]; then
             RELEASE_NOTES="${RELEASE_NOTES}### ✨ New Features\n${FEATURES}\n"
@@ -140,9 +140,8 @@ jobs:
             RELEASE_NOTES="${RELEASE_NOTES}### 📦 Other Changes\n${OTHERS}\n"
           fi
 
-          # 添加完整变更日志链接
+          # 添加下载说明
           RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
-          RELEASE_NOTES="${RELEASE_NOTES}**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${GITHUB_REF_NAME}\n\n"
           RELEASE_NOTES="${RELEASE_NOTES}📥 **Downloads**\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.dmg\` - macOS Disk Image (Recommended)\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.zip\` - ZIP Archive\n\n"
