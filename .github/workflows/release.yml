@@ -15,20 +15,63 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for tags
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
-      - name: Build
+      - name: Import Code Signing Certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 12)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          # Set keychain as default
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          # Allow codesign to access keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Build and Archive
         run: |
           xcodebuild -project DriveSync.xcodeproj \
             -scheme DriveSync \
             -configuration Release \
             -archivePath build/DriveSync.xcarchive \
             archive \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
+
+      - name: Sign App
+        run: |
+          APP_PATH="build/DriveSync.xcarchive/Products/Applications/DriveSync.app"
+
+          # Deep sign all components
+          codesign --deep --force --options runtime \
+            --sign "Developer ID Application" \
+            --timestamp \
+            "$APP_PATH"
+
+          # Verify signature
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
       - name: Create DMG
         run: |
@@ -41,26 +84,65 @@ jobs:
             -ov -format UDZO \
             "build/DriveSync-${GITHUB_REF_NAME}.dmg"
 
+          # Sign DMG
+          codesign --force --sign "Developer ID Application" \
+            --timestamp \
+            "build/DriveSync-${GITHUB_REF_NAME}.dmg"
+
       - name: Create ZIP
         run: |
           APP_PATH="build/DriveSync.xcarchive/Products/Applications/DriveSync.app"
           cd "$(dirname "$APP_PATH")"
-          zip -r -y "$GITHUB_WORKSPACE/build/DriveSync-${GITHUB_REF_NAME}.zip" DriveSync.app
+          /usr/bin/ditto -c -k --keepParent DriveSync.app "$GITHUB_WORKSPACE/build/DriveSync-${GITHUB_REF_NAME}.zip"
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Submit for notarization
+          xcrun notarytool submit "build/DriveSync-${GITHUB_REF_NAME}.dmg" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the notarization ticket
+          xcrun stapler staple "build/DriveSync-${GITHUB_REF_NAME}.dmg"
+
+      - name: Notarize ZIP
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit "build/DriveSync-${GITHUB_REF_NAME}.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+      - name: Cleanup Keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
+          rm -f $RUNNER_TEMP/certificate.p12
 
       - name: Generate Release Notes
         id: changelog
         run: |
-          # 获取上一个 tag
           PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF_NAME}$" | head -n 1)
 
           if [ -z "$PREV_TAG" ]; then
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
 
-          # 生成 commit 日志
           COMMITS=$(git log ${PREV_TAG}..${GITHUB_REF_NAME} --pretty=format:"%s" --reverse)
 
-          # 初始化分类数组
           FEATURES=""
           FIXES=""
           DOCS=""
@@ -68,13 +150,12 @@ jobs:
           REFACTOR=""
           OTHERS=""
 
-          # 分类 commits
           while IFS= read -r commit; do
             case "$commit" in
-              feat:*|Feat:*|Feature:*|feature:*)
+              feat:*|Feat:*|Feature:*|feature:*|feat\(*\):*|feat\(*\)!:*)
                 FEATURES="${FEATURES}- ✨ ${commit#*:}\n"
                 ;;
-              fix:*|Fix:*|修复:*|修复：*)
+              fix:*|Fix:*|修复:*|修复：*|fix\(*\):*)
                 FIXES="${FIXES}- 🐛 ${commit#*:}\n"
                 ;;
               docs:*|Docs:*|文档:*|文档：*|Doc:*|doc:*)
@@ -95,11 +176,10 @@ jobs:
               test:*|Test:*|测试:*|测试：*)
                 OTHERS="${OTHERS}- ✅ ${commit}\n"
                 ;;
-              chore:*|Chore:*)
+              chore:*|Chore:*|chore\(*\):*)
                 OTHERS="${OTHERS}- 🔨 ${commit#*:}\n"
                 ;;
               *)
-                # 智能识别中文提交信息
                 if [[ "$commit" =~ ^(新增|添加|增加) ]]; then
                   FEATURES="${FEATURES}- ✨ ${commit}\n"
                 elif [[ "$commit" =~ ^(修复|修正|解决) ]]; then
@@ -113,7 +193,6 @@ jobs:
             esac
           done <<< "$COMMITS"
 
-          # 构建 Release Notes
           RELEASE_NOTES=""
 
           if [ -n "$FEATURES" ]; then
@@ -140,14 +219,13 @@ jobs:
             RELEASE_NOTES="${RELEASE_NOTES}### 📦 Other Changes\n${OTHERS}\n"
           fi
 
-          # 添加下载说明
           RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
           RELEASE_NOTES="${RELEASE_NOTES}📥 **Downloads**\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.dmg\` - macOS Disk Image (Recommended)\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.zip\` - ZIP Archive\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}✅ **Signed & Notarized** by Apple\n"
           RELEASE_NOTES="${RELEASE_NOTES}💻 **Requirements**: macOS 14.0+\n"
 
-          # 输出到 GitHub Actions
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo -e "$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
