@@ -143,83 +143,45 @@ jobs:
 
           COMMITS=$(git log ${PREV_TAG}..${GITHUB_REF_NAME} --pretty=format:"%s" --reverse)
 
+          CHANGES=""
           FEATURES=""
           FIXES=""
-          DOCS=""
-          CI=""
-          REFACTOR=""
-          OTHERS=""
 
           while IFS= read -r commit; do
             case "$commit" in
               feat:*|Feat:*|Feature:*|feature:*)
-                FEATURES="${FEATURES}- ${commit#*: }\n"
+                FEATURES="${FEATURES}- ✨ ${commit#*: }\n"
                 ;;
               feat\(*\):*|feat\(*\)!:*)
                 msg="${commit#*: }"
-                FEATURES="${FEATURES}- ${msg}\n"
+                FEATURES="${FEATURES}- ✨ ${msg}\n"
                 ;;
               fix:*|Fix:*|fix\(*\):*)
-                FIXES="${FIXES}- ${commit#*: }\n"
-                ;;
-              docs:*|Docs:*|Doc:*|doc:*)
-                DOCS="${DOCS}- ${commit#*: }\n"
-                ;;
-              ci:*|CI:*|Ci:*)
-                CI="${CI}- ${commit#*: }\n"
-                ;;
-              refactor:*|Refactor:*)
-                REFACTOR="${REFACTOR}- ${commit#*: }\n"
-                ;;
-              perf:*|Perf:*)
-                REFACTOR="${REFACTOR}- ${commit#*: }\n"
-                ;;
-              style:*|Style:*)
-                OTHERS="${OTHERS}- ${commit#*: }\n"
-                ;;
-              test:*|Test:*)
-                OTHERS="${OTHERS}- ${commit#*: }\n"
-                ;;
-              chore:*|Chore:*|chore\(*\):*)
-                OTHERS="${OTHERS}- ${commit#*: }\n"
+                FIXES="${FIXES}- 🐛 ${commit#*: }\n"
                 ;;
               *)
-                OTHERS="${OTHERS}- ${commit}\n"
+                CHANGES="${CHANGES}- ${commit#*: }\n"
                 ;;
             esac
           done <<< "$COMMITS"
 
           RELEASE_NOTES=""
 
+          if [ -n "$CHANGES" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}### 🔄 What's Changed\n${CHANGES}\n"
+          fi
+
           if [ -n "$FEATURES" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### New Features\n${FEATURES}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### 🚀 New Features\n${FEATURES}\n"
           fi
 
           if [ -n "$FIXES" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### Bug Fixes\n${FIXES}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### 🐛 Bug Fixes\n${FIXES}\n"
           fi
 
-          if [ -n "$REFACTOR" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### Improvements\n${REFACTOR}\n"
-          fi
-
-          if [ -n "$DOCS" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### Documentation\n${DOCS}\n"
-          fi
-
-          if [ -n "$CI" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### CI/CD\n${CI}\n"
-          fi
-
-          if [ -n "$OTHERS" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### Other Changes\n${OTHERS}\n"
-          fi
-
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
           RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
-          RELEASE_NOTES="${RELEASE_NOTES}**Downloads**\n"
-          RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.dmg\` - macOS Disk Image (Recommended)\n"
-          RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.zip\` - ZIP Archive\n\n"
-          RELEASE_NOTES="${RELEASE_NOTES}**Requirements**: macOS 14.0+\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Full Changelog**: [${PREV_TAG}...${GITHUB_REF_NAME}](${REPO_URL}/compare/${PREV_TAG}...${GITHUB_REF_NAME})\n"
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo -e "$RELEASE_NOTES" >> $GITHUB_OUTPUT
