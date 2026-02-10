@@ -45,6 +45,7 @@ vendor/
 
 # Claude Code
 CLAUDE.md
+rclone-reference.md
 
 # Cache files
 *.cache

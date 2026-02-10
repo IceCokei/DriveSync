@@ -139,26 +139,26 @@ struct MenuBarView: View {
                 .buttonStyle(.plain)
             }
 
-            if let percent = syncManager.syncProgressPercent {
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                if let percent = syncManager.syncProgressPercent {
                     ProgressView(value: percent)
                         .progressViewStyle(.linear)
                         .tint(.blue)
+                }
 
-                    HStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    if let percent = syncManager.syncProgressPercent {
                         Text("\(Int(percent * 100))%")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
-
-                        if !syncManager.syncProgress.isEmpty {
-                            Text(syncManager.syncProgress)
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
                     }
+
+                    Text(syncManager.syncProgress.isEmpty ? "Preparing..." : syncManager.syncProgress)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+
+                    Spacer()
                 }
             }
         }

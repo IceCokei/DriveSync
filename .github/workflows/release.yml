@@ -152,43 +152,39 @@ jobs:
 
           while IFS= read -r commit; do
             case "$commit" in
-              feat:*|Feat:*|Feature:*|feature:*|feat\(*\):*|feat\(*\)!:*)
-                FEATURES="${FEATURES}- ✨ ${commit#*:}\n"
+              feat:*|Feat:*|Feature:*|feature:*)
+                FEATURES="${FEATURES}- ${commit#*: }\n"
                 ;;
-              fix:*|Fix:*|修复:*|修复：*|fix\(*\):*)
-                FIXES="${FIXES}- 🐛 ${commit#*:}\n"
+              feat\(*\):*|feat\(*\)!:*)
+                msg="${commit#*: }"
+                FEATURES="${FEATURES}- ${msg}\n"
                 ;;
-              docs:*|Docs:*|文档:*|文档：*|Doc:*|doc:*)
-                DOCS="${DOCS}- 📝 ${commit#*:}\n"
+              fix:*|Fix:*|fix\(*\):*)
+                FIXES="${FIXES}- ${commit#*: }\n"
+                ;;
+              docs:*|Docs:*|Doc:*|doc:*)
+                DOCS="${DOCS}- ${commit#*: }\n"
                 ;;
               ci:*|CI:*|Ci:*)
-                CI="${CI}- 🔧 ${commit#*:}\n"
+                CI="${CI}- ${commit#*: }\n"
                 ;;
-              refactor:*|Refactor:*|重构:*|重构：*)
-                REFACTOR="${REFACTOR}- ♻️ ${commit#*:}\n"
+              refactor:*|Refactor:*)
+                REFACTOR="${REFACTOR}- ${commit#*: }\n"
                 ;;
-              perf:*|Perf:*|性能:*|性能：*)
-                OTHERS="${OTHERS}- ⚡ ${commit}\n"
+              perf:*|Perf:*)
+                REFACTOR="${REFACTOR}- ${commit#*: }\n"
                 ;;
-              style:*|Style:*|样式:*|样式：*)
-                OTHERS="${OTHERS}- 💄 ${commit}\n"
+              style:*|Style:*)
+                OTHERS="${OTHERS}- ${commit#*: }\n"
                 ;;
-              test:*|Test:*|测试:*|测试：*)
-                OTHERS="${OTHERS}- ✅ ${commit}\n"
+              test:*|Test:*)
+                OTHERS="${OTHERS}- ${commit#*: }\n"
                 ;;
               chore:*|Chore:*|chore\(*\):*)
-                OTHERS="${OTHERS}- 🔨 ${commit#*:}\n"
+                OTHERS="${OTHERS}- ${commit#*: }\n"
                 ;;
               *)
-                if [[ "$commit" =~ ^(新增|添加|增加) ]]; then
-                  FEATURES="${FEATURES}- ✨ ${commit}\n"
-                elif [[ "$commit" =~ ^(修复|修正|解决) ]]; then
-                  FIXES="${FIXES}- 🐛 ${commit}\n"
-                elif [[ "$commit" =~ ^(优化|改进|提升) ]]; then
-                  REFACTOR="${REFACTOR}- ♻️ ${commit}\n"
-                else
-                  OTHERS="${OTHERS}- 📦 ${commit}\n"
-                fi
+                OTHERS="${OTHERS}- ${commit}\n"
                 ;;
             esac
           done <<< "$COMMITS"
@@ -196,35 +192,34 @@ jobs:
           RELEASE_NOTES=""
 
           if [ -n "$FEATURES" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### ✨ New Features\n${FEATURES}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### New Features\n${FEATURES}\n"
           fi
 
           if [ -n "$FIXES" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### 🐛 Bug Fixes\n${FIXES}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### Bug Fixes\n${FIXES}\n"
           fi
 
           if [ -n "$REFACTOR" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### ♻️ Code Improvements\n${REFACTOR}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### Improvements\n${REFACTOR}\n"
           fi
 
           if [ -n "$DOCS" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### 📝 Documentation\n${DOCS}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### Documentation\n${DOCS}\n"
           fi
 
           if [ -n "$CI" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### 🔧 CI/CD\n${CI}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### CI/CD\n${CI}\n"
           fi
 
           if [ -n "$OTHERS" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES}### 📦 Other Changes\n${OTHERS}\n"
+            RELEASE_NOTES="${RELEASE_NOTES}### Other Changes\n${OTHERS}\n"
           fi
 
           RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
-          RELEASE_NOTES="${RELEASE_NOTES}📥 **Downloads**\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Downloads**\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.dmg\` - macOS Disk Image (Recommended)\n"
           RELEASE_NOTES="${RELEASE_NOTES}- \`DriveSync-${GITHUB_REF_NAME}.zip\` - ZIP Archive\n\n"
-          RELEASE_NOTES="${RELEASE_NOTES}✅ **Signed & Notarized** by Apple\n"
-          RELEASE_NOTES="${RELEASE_NOTES}💻 **Requirements**: macOS 14.0+\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Requirements**: macOS 14.0+\n"
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo -e "$RELEASE_NOTES" >> $GITHUB_OUTPUT
