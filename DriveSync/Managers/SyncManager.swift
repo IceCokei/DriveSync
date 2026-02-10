@@ -84,6 +84,7 @@ class SyncManager: ObservableObject {
     private var syncTimer: Timer?
     private let userDefaultsKey = "DriveSync.Folders"
     private let settingsKey = "DriveSync.Settings"
+    private var lastProgressUpdate: Date = .distantPast
     
     // MARK: - Initialization
     
@@ -113,12 +114,15 @@ class SyncManager: ObservableObject {
             await checkRcloneInstallation()
             await refreshRemotes()
             scheduleSync()
-            
+
             if settings.syncOnLaunch && !folders.isEmpty {
                 await syncAll()
             }
-            
-            if settings.checkUpdatesAutomatically {
+        }
+
+        // Update check in separate task - not blocked by sync
+        if settings.checkUpdatesAutomatically {
+            Task {
                 performAutomaticUpdateCheck()
             }
         }
@@ -361,38 +365,40 @@ class SyncManager: ObservableObject {
             }
             
             do {
+                let resolvedPath = resolveLocalPath(folders[index].localPath)
                 let result = try await rclone.sync(
-                    source: folders[index].localPath,
+                    source: resolvedPath,
                     destination: folders[index].fullRemotePath,
                     excludePatterns: folders[index].excludePatterns
-                ) { [weak self] progress in
+                ) { [weak self] rawOutput in
+                    // Pre-filter: only dispatch to main actor if output looks like progress stats
+                    guard rawOutput.contains("/") else { return }
                     Task { @MainActor in
-                        self?.syncProgress = self?.simplifyProgress(progress) ?? progress
-                        // Parse percentage from rclone output (e.g., "Transferred: 5 / 10, 50%")
-                        self?.syncProgressPercent = self?.parseProgressPercent(from: progress)
+                        self?.handleProgressOutput(rawOutput)
                     }
                 }
-                
+
                 folders[index].lastSyncDate = Date()
                 folders[index].lastSyncStatus = result.success ? .success : .error
                 folders[index].lastError = nil
-                
+
             } catch {
                 folders[index].lastSyncStatus = .error
                 folders[index].lastError = error.localizedDescription
             }
         }
-        
+
+        let wasCancelled = syncCancelled
         currentSyncFolder = nil
         syncProgress = ""
         syncProgressPercent = nil
         syncCancelled = false
         isSyncing = false
         lastSyncDate = Date()
-        
+
         saveFolders()
-        
-        if !syncCancelled {
+
+        if !wasCancelled {
             await sendSyncNotification(folders)
         }
     }
@@ -425,22 +431,22 @@ class SyncManager: ObservableObject {
                 source: resolvedPath,
                 destination: folder.fullRemotePath,
                 excludePatterns: folder.excludePatterns
-            ) { [weak self] progress in
+            ) { [weak self] rawOutput in
+                guard rawOutput.contains("/") else { return }
                 Task { @MainActor in
-                    self?.syncProgress = self?.simplifyProgress(progress) ?? progress
-                    self?.syncProgressPercent = self?.parseProgressPercent(from: progress)
+                    self?.handleProgressOutput(rawOutput)
                 }
             }
-            
+
             folders[index].lastSyncDate = Date()
             folders[index].lastSyncStatus = result.success ? .success : .error
             folders[index].lastError = nil
-            
+
         } catch {
             folders[index].lastSyncStatus = .error
             folders[index].lastError = error.localizedDescription
         }
-        
+
         currentSyncFolder = nil
         syncProgress = ""
         syncProgressPercent = nil
@@ -448,7 +454,6 @@ class SyncManager: ObservableObject {
 
         saveFolders()
 
-        // Send notification for single folder sync
         await sendSyncNotification([folders[index]])
     }
     
@@ -492,14 +497,50 @@ class SyncManager: ObservableObject {
         return path
     }
     
+    /// Handle raw rclone output: extract the latest stats line and update progress
+    /// Throttled to max once per 500ms to prevent excessive SwiftUI re-renders
+    private func handleProgressOutput(_ rawOutput: String) {
+        let now = Date()
+        guard now.timeIntervalSince(lastProgressUpdate) >= 0.5 else { return }
+        lastProgressUpdate = now
+
+        // Split by \r and \n (rclone uses \r for in-place updates when piped)
+        let lines = rawOutput
+            .components(separatedBy: CharacterSet(charactersIn: "\r\n"))
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        // Find the last stats-like line (contains " / " and "B")
+        guard let line = lines.last(where: { $0.contains(" / ") && $0.contains("B") }) else { return }
+
+        // Strip NOTICE prefix if present
+        let cleaned: String
+        if let r = line.range(of: "NOTICE:") {
+            cleaned = String(line[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+        } else {
+            cleaned = line
+        }
+
+        let percent = parseProgressPercent(from: cleaned)
+        if let p = percent, p >= 1.0 {
+            syncProgress = "Finishing..."
+            syncProgressPercent = nil
+        } else {
+            syncProgress = simplifyProgress(cleaned)
+            syncProgressPercent = percent
+        }
+    }
+
+    private static let percentRegex = try! NSRegularExpression(pattern: #"(\d+)%"#)
+    private static let bytesRegex = try! NSRegularExpression(pattern: #"([\d.]+)\s*([\w]+)\s*/\s*([\d.]+)\s*([\w]+)"#)
+    private static let etaRegex = try! NSRegularExpression(pattern: #"ETA\s+([\w\d]+)"#)
+
     /// Parse percentage from rclone progress output
     private func parseProgressPercent(from output: String) -> Double? {
-        // rclone outputs progress like: "Transferred: 5 / 10, 50%" or just "50%"
-        let pattern = #"(\d+)%"#
-        if let regex = try? NSRegularExpression(pattern: pattern),
-           let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
-           let range = Range(match.range(at: 1), in: output),
-           let percent = Double(output[range]) {
+        let range = NSRange(output.startIndex..., in: output)
+        if let match = Self.percentRegex.firstMatch(in: output, range: range),
+           let r = Range(match.range(at: 1), in: output),
+           let percent = Double(output[r]) {
             return percent / 100.0
         }
         return nil
@@ -513,11 +554,10 @@ class SyncManager: ObservableObject {
         var total = ""
         var unit = ""
         var eta = ""
-        
-        // Extract transferred/total bytes (e.g., "5.459 MiB / 6.622 MiB")
-        let bytesPattern = #"([\d.]+)\s*([\w]+)\s*/\s*([\d.]+)\s*([\w]+)"#
-        if let regex = try? NSRegularExpression(pattern: bytesPattern),
-           let match = regex.firstMatch(in: progress, range: NSRange(progress.startIndex..., in: progress)) {
+
+        let nsRange = NSRange(progress.startIndex..., in: progress)
+
+        if let match = Self.bytesRegex.firstMatch(in: progress, range: nsRange) {
             if let range1 = Range(match.range(at: 1), in: progress),
                let range3 = Range(match.range(at: 3), in: progress),
                let range4 = Range(match.range(at: 4), in: progress) {
@@ -528,15 +568,12 @@ class SyncManager: ObservableObject {
                 unit = String(progress[range4])
             }
         }
-        
-        // Extract ETA (e.g., "ETA 2s" or "ETA 1m30s")
-        let etaPattern = #"ETA\s+([\w\d]+)"#
-        if let regex = try? NSRegularExpression(pattern: etaPattern),
-           let match = regex.firstMatch(in: progress, range: NSRange(progress.startIndex..., in: progress)),
+
+        if let match = Self.etaRegex.firstMatch(in: progress, range: nsRange),
            let range = Range(match.range(at: 1), in: progress) {
             eta = String(progress[range])
         }
-        
+
         // Build simplified string
         if !transferred.isEmpty && !total.isEmpty {
             var result = "\(transferred) / \(total) \(unit)"
@@ -702,17 +739,23 @@ class SyncManager: ObservableObject {
     /// Check for updates via GitHub API
     /// Returns: (isUpdateAvailable, latestVersion, releaseURL)
     func checkForUpdates() async throws -> (Bool, String, URL?) {
+        let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
         let url = URL(string: "https://api.github.com/repos/IceCokei/DriveSync/releases/latest")!
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.setValue("DriveSync/1.0.2", forHTTPHeaderField: "User-Agent")
-        
+        request.setValue("DriveSync/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 15
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        
+
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-            print("Update check failed with status code: \(httpResponse.statusCode)")
-            if httpResponse.statusCode == 404 {
-                print("No 'Latest' release found on GitHub. Make sure your release is not marked as a draft or pre-release.")
+            switch httpResponse.statusCode {
+            case 403:
+                print("GitHub API rate limit reached. Skipping update check.")
+            case 404:
+                print("No release found on GitHub. Make sure the release is not a draft or pre-release.")
+            default:
+                print("Update check failed with status code: \(httpResponse.statusCode)")
             }
             throw URLError(.badServerResponse)
         }
@@ -720,8 +763,6 @@ class SyncManager: ObservableObject {
         let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
         
         let latestVersion = release.tagName.replacingOccurrences(of: "v", with: "")
-        let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-        
         let isUpdateAvailable = compareVersions(latest: latestVersion, current: currentVersion)
         
         return (isUpdateAvailable, release.tagName, URL(string: release.htmlUrl))

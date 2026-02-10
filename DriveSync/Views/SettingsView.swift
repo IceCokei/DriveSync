@@ -30,20 +30,17 @@ struct SettingsView: View {
                 (colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
                     .ignoresSafeArea()
 
-                FoldersSettingsView()
-                    .environmentObject(syncManager)
-                    .opacity(selectedTab == .folders ? 1 : 0)
-                    .zIndex(selectedTab == .folders ? 1 : 0)
-
-                AccountsSettingsView()
-                    .environmentObject(syncManager)
-                    .opacity(selectedTab == .accounts ? 1 : 0)
-                    .zIndex(selectedTab == .accounts ? 1 : 0)
-
-                GeneralSettingsView()
-                    .environmentObject(syncManager)
-                    .opacity(selectedTab == .general ? 1 : 0)
-                    .zIndex(selectedTab == .general ? 1 : 0)
+                switch selectedTab {
+                case .folders:
+                    FoldersSettingsView()
+                        .environmentObject(syncManager)
+                case .accounts:
+                    AccountsSettingsView()
+                        .environmentObject(syncManager)
+                case .general:
+                    GeneralSettingsView()
+                        .environmentObject(syncManager)
+                }
             }
         }
         .frame(width: 500, height: 600)
@@ -55,7 +52,6 @@ struct SettingsView: View {
 struct FoldersSettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
     @State private var showingAddSheet = false
-    @State private var showingAddAccountSheet = false
     @State private var selectedFolder: SyncFolder?
 
     var body: some View {
@@ -149,10 +145,6 @@ struct FoldersSettingsView: View {
             AddFolderSheet()
                 .environmentObject(syncManager)
         }
-        .sheet(isPresented: $showingAddAccountSheet) {
-            AddAccountSheet()
-                .environmentObject(syncManager)
-        }
         .sheet(item: $selectedFolder) { folder in
             EditFolderSheet(folder: folder)
                 .environmentObject(syncManager)
@@ -186,8 +178,6 @@ struct FolderSettingsRow: View {
     let folder: SyncFolder
     let onEdit: () -> Void
     @EnvironmentObject var syncManager: SyncManager
-
-    @State private var showingErrorPopover = false
 
     private var statusIcon: String {
         folder.lastSyncStatus == .success ? "checkmark.circle.fill" : "circle"
@@ -1353,8 +1343,7 @@ struct GeneralSettingsView: View {
             syncManager.saveSettings()
         }
         .onChange(of: syncManager.settings.rclonePath) { _, _ in
-            // When path changes, save and re-check
-            syncManager.saveSettings()
+            // saveSettings() already called by the .onChange(of: settings) above
             Task {
                 await syncManager.checkRcloneInstallation()
             }

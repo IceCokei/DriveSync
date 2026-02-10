@@ -110,14 +110,11 @@ actor RcloneWrapper {
     
     /// Opens Terminal to run rclone config for adding a new Google Drive
     func configureNewDrive(name: String) async throws {
-        // Build the rclone config command
-        let command = "\(rclonePath) config create \(name) drive"
-        
-        // Open Terminal and run the command
+        let command = "\(escapeForShell(rclonePath)) config create \(escapeForShell(name)) drive"
         let script = """
         tell application "Terminal"
             activate
-            do script "\(command)"
+            do script "\(escapeForAppleScript(command))"
         end tell
         """
         
@@ -131,10 +128,11 @@ actor RcloneWrapper {
     
     /// Opens Terminal to run interactive rclone config
     func openInteractiveConfig() async throws {
+        let command = "\(escapeForShell(rclonePath)) config"
         let script = """
         tell application "Terminal"
             activate
-            do script "\(rclonePath) config"
+            do script "\(escapeForAppleScript(command))"
         end tell
         """
         
@@ -146,35 +144,42 @@ actor RcloneWrapper {
         process.waitUntilExit()
     }
     
-    /// Rename an existing remote
+    /// Rename an existing remote (preserves all config: token, team_drive, scope, etc.)
     func renameRemote(from oldName: String, to newName: String) async throws {
-        // Use rclone config update to effectively rename by creating new and deleting old
-        // First, get the config for the old remote
         let showResult = try await runner.run(rclonePath, arguments: ["config", "show", oldName])
         guard showResult.isSuccess else {
             throw RcloneError.invalidRemote(oldName)
         }
-        
-        // Parse the config to get the token
+
+        // Parse ALL config key-value pairs, not just token
+        var remoteType = "drive"
+        var configParams: [String] = []
         let configLines = showResult.stdout.components(separatedBy: "\n")
-        var token = ""
         for line in configLines {
-            if line.hasPrefix("token = ") {
-                token = String(line.dropFirst("token = ".count))
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty || trimmed.hasPrefix("[") { continue }
+            guard let equalsIndex = trimmed.firstIndex(of: "=") else { continue }
+            let key = trimmed[trimmed.startIndex..<equalsIndex].trimmingCharacters(in: .whitespaces)
+            let value = String(trimmed[trimmed.index(after: equalsIndex)...]).trimmingCharacters(in: .whitespaces)
+            if key == "type" {
+                remoteType = value
+                continue
             }
+            configParams.append(key)
+            configParams.append(value)
         }
-        
-        // Create new remote with the new name using the same token
-        let createArgs = ["config", "create", newName, "drive", "token", token]
+
+        // Create new remote preserving all config (team_drive, scope, root_folder_id, etc.)
+        var createArgs = ["config", "create", newName, remoteType]
+        createArgs.append(contentsOf: configParams)
         let createResult = try await runner.run(rclonePath, arguments: createArgs)
         guard createResult.isSuccess else {
             throw RcloneError.configurationFailed("Failed to create new remote: \(createResult.stderr)")
         }
-        
+
         // Delete the old remote
         let deleteResult = try await runner.run(rclonePath, arguments: ["config", "delete", oldName])
         guard deleteResult.isSuccess else {
-            // Try to clean up the new one if delete fails
             _ = try? await runner.run(rclonePath, arguments: ["config", "delete", newName])
             throw RcloneError.configurationFailed("Failed to delete old remote: \(deleteResult.stderr)")
         }
@@ -236,7 +241,14 @@ actor RcloneWrapper {
         excludePatterns: [String] = [],
         onProgress: (@Sendable (String) -> Void)? = nil
     ) async throws -> SyncResult {
-        var args = ["sync", source, destination, "--progress", "--stats-one-line"]
+        var args = [
+            "sync", source, destination,
+            "--stats-one-line", "--stats", "1s",
+            "--fast-list",
+            "--drive-chunk-size", "64M",
+            "--contimeout", "30s", "--timeout", "5m",
+            "--retries", "3", "--low-level-retries", "3"
+        ]
 
         // Add exclude patterns
         for pattern in excludePatterns where !pattern.isEmpty {
@@ -262,10 +274,11 @@ actor RcloneWrapper {
         let duration = Date().timeIntervalSince(startTime)
         
         if result.isSuccess {
+            // rclone stats (--stats-one-line) output goes to stderr, not stdout
             return SyncResult(
                 success: true,
-                filesTransferred: parseFileCount(from: result.stdout),
-                bytesTransferred: parseByteCount(from: result.stdout),
+                filesTransferred: parseFileCount(from: result.stderr),
+                bytesTransferred: parseByteCount(from: result.stderr),
                 duration: duration,
                 error: nil
             )
@@ -273,13 +286,20 @@ actor RcloneWrapper {
             throw RcloneError.syncFailed(result.stderr)
         }
     }
-    
+
     func copy(
         source: String,
         destination: String,
         onProgress: (@Sendable (String) -> Void)? = nil
     ) async throws -> SyncResult {
-        let args = ["copy", source, destination, "--progress", "--stats-one-line"]
+        let args = [
+            "copy", source, destination,
+            "--stats-one-line", "--stats", "1s",
+            "--fast-list",
+            "--drive-chunk-size", "64M",
+            "--contimeout", "30s", "--timeout", "5m",
+            "--retries", "3", "--low-level-retries", "3"
+        ]
         
         let startTime = Date()
         
@@ -297,8 +317,8 @@ actor RcloneWrapper {
         if result.isSuccess {
             return SyncResult(
                 success: true,
-                filesTransferred: parseFileCount(from: result.stdout),
-                bytesTransferred: parseByteCount(from: result.stdout),
+                filesTransferred: parseFileCount(from: result.stderr),
+                bytesTransferred: parseByteCount(from: result.stderr),
                 duration: duration,
                 error: nil
             )
@@ -306,32 +326,44 @@ actor RcloneWrapper {
             throw RcloneError.syncFailed(result.stderr)
         }
     }
-    
+
+    // MARK: - String Escaping
+
+    /// Escape a string for safe embedding inside AppleScript double-quoted strings
+    private func escapeForAppleScript(_ str: String) -> String {
+        str.replacingOccurrences(of: "\\", with: "\\\\")
+           .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    /// Escape a string for safe embedding in a shell command (single-quote wrapping)
+    private func escapeForShell(_ str: String) -> String {
+        "'" + str.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
     // MARK: - Helpers
-    
+
+    // Cached regex — compiled once, reused on every call
+    private static let fileCountRegex = try! NSRegularExpression(pattern: #"Transferred:\s+(\d+)"#)
+    private static let byteCountRegex = try! NSRegularExpression(pattern: #"Transferred:\s+([\d.]+)\s*(\w+)"#)
+
     private func parseFileCount(from output: String) -> Int {
-        // Parse "Transferred: X / Y, 100%" pattern
-        let pattern = #"Transferred:\s+(\d+)"#
-        if let regex = try? NSRegularExpression(pattern: pattern),
-           let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
-           let range = Range(match.range(at: 1), in: output) {
-            return Int(output[range]) ?? 0
+        let range = NSRange(output.startIndex..., in: output)
+        if let match = Self.fileCountRegex.firstMatch(in: output, range: range),
+           let r = Range(match.range(at: 1), in: output) {
+            return Int(output[r]) ?? 0
         }
         return 0
     }
-    
+
     private func parseByteCount(from output: String) -> Int64 {
-        // rclone stats one-line outputs like: "Transferred: 5.459 MiB / 6.622 MiB, 82%, 0 B/s, ETA -"
-        // We look for the part before the first "/"
-        let pattern = #"Transferred:\s+([\d.]+)\s*(\w+)"#
-        if let regex = try? NSRegularExpression(pattern: pattern),
-           let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
+        let range = NSRange(output.startIndex..., in: output)
+        if let match = Self.byteCountRegex.firstMatch(in: output, range: range),
            let valueRange = Range(match.range(at: 1), in: output),
            let unitRange = Range(match.range(at: 2), in: output) {
-            
+
             let valueStr = String(output[valueRange])
             let unitStr = String(output[unitRange]).lowercased()
-            
+
             if let value = Double(valueStr) {
                 let multiplier: Double
                 switch unitStr {
