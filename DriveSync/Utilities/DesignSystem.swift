@@ -92,16 +92,19 @@ enum DSTypography {
     case caption         // Secondary text
     case tiny            // Timestamps
 
+    // Font family name must match the internal name in RomanticRounded.ttf
+    static let fontFamily = "\u{6D6A}\u{6F2B}\u{96C5}\u{5706}_Sleek"
+
     var font: Font {
         switch self {
         case .title:
-            return .system(size: 11, weight: .semibold)
+            return .custom(DSTypography.fontFamily, size: 11).weight(.bold)
         case .body:
-            return .system(size: 13, weight: .medium)
+            return .custom(DSTypography.fontFamily, size: 13).weight(.semibold)
         case .caption:
-            return .system(size: 11, weight: .regular)
+            return .custom(DSTypography.fontFamily, size: 11).weight(.medium)
         case .tiny:
-            return .system(size: 10, weight: .regular)
+            return .custom(DSTypography.fontFamily, size: 10).weight(.medium)
         }
     }
 }
@@ -258,7 +261,7 @@ struct DSStatusBar: View {
     let statusText: String
     let statusColor: Color
     let lastSyncText: String
-
+    var accountCount: Int = 0
     var body: some View {
         HStack(spacing: 8) {
             // Left: Status
@@ -269,7 +272,16 @@ struct DSStatusBar: View {
 
                 Text(statusText)
                     .font(DSTypography.caption.font)
-                    .foregroundStyle(Color.dsTextSecondary)
+                    .foregroundStyle(Color.dsTextPrimary)
+            }
+
+            Spacer()
+
+            // Center: Account count
+            if accountCount > 0 {
+                Text("\("settings.tab.accounts".localized)：\(accountCount)")
+                    .font(DSTypography.caption.font)
+                    .foregroundStyle(Color.dsTextPrimary)
             }
 
             Spacer()
@@ -277,7 +289,7 @@ struct DSStatusBar: View {
             // Right: Last sync time
             Text(lastSyncText)
                 .font(DSTypography.caption.font)
-                .foregroundStyle(Color.dsTextTertiary)
+                .foregroundStyle(Color.dsTextPrimary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

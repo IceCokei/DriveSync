@@ -69,6 +69,7 @@ struct FoldersSettingsView: View {
                         Spacer()
 
                         Image("CloudServerIcon")
+                            .renderingMode(.original)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 70, height: 70)
@@ -92,6 +93,7 @@ struct FoldersSettingsView: View {
                         Spacer()
 
                         Image("FolderIcon")
+                            .renderingMode(.original)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 60, height: 60)
@@ -141,7 +143,8 @@ struct FoldersSettingsView: View {
                 DSStatusBar(
                     statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                     statusColor: syncManager.isSyncing ? .orange : .green,
-                    lastSyncText: lastSyncText
+                    lastSyncText: lastSyncText,
+                    accountCount: syncManager.availableRemotes.count
                 )
             }
         }
@@ -691,6 +694,7 @@ struct AddAccountSheet: View {
     var body: some View {
         VStack(spacing: 20) {
             Image("CloudServerIcon")
+                .renderingMode(.original)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 60, height: 60)
@@ -983,7 +987,7 @@ struct AccountsSettingsView: View {
                             .padding(DesignTokens.spacingM)
                         }
                         .buttonStyle(.plain)
-                        .foregroundStyle(Color.dsPrimary)
+                        .foregroundStyle(Color.dsTextPrimary)
                         .dsCard()
                     }
                     .padding(.horizontal, 20)
@@ -999,7 +1003,8 @@ struct AccountsSettingsView: View {
                 DSStatusBar(
                     statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                     statusColor: syncManager.isSyncing ? .orange : .green,
-                    lastSyncText: lastSyncText
+                    lastSyncText: lastSyncText,
+                    accountCount: syncManager.availableRemotes.count
                 )
             }
         }
@@ -1328,7 +1333,7 @@ struct GeneralSettingsView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .font(DSTypography.caption.font)
-                                .foregroundStyle(Color.dsPrimary)
+                                .foregroundStyle(Color.dsTextPrimary)
                             }
                         }
                         .padding(DesignTokens.spacingM)
@@ -1343,7 +1348,7 @@ struct GeneralSettingsView: View {
                             Spacer()
 
                             Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(.custom(DSTypography.fontFamily, size: 11))
                                 .foregroundStyle(Color.dsTextSecondary)
                         }
                         .padding(DesignTokens.spacingM)
@@ -1360,7 +1365,8 @@ struct GeneralSettingsView: View {
         DSStatusBar(
                 statusText: syncManager.isSyncing ? "status.syncing".localized : "status.all_synced".localized,
                 statusColor: syncManager.isSyncing ? .orange : .green,
-                lastSyncText: lastSyncText
+                lastSyncText: lastSyncText,
+                accountCount: syncManager.availableRemotes.count
             )
         }
         .alert(updateAlertTitle, isPresented: $showingUpdateAlert) {

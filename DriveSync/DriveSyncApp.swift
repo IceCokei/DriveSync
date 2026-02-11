@@ -10,6 +10,7 @@
 import SwiftUI
 import ServiceManagement
 import UserNotifications
+import CoreText
 
 @main
 struct DriveSyncApp: App {
@@ -37,6 +38,11 @@ struct DriveSyncApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Register custom font
+        if let fontURL = Bundle.main.url(forResource: "RomanticRounded", withExtension: "ttf") {
+            CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
+        }
+
         UNUserNotificationCenter.current().delegate = self
         
         // Register notification categories

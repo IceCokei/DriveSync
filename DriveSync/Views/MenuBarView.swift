@@ -95,11 +95,11 @@ struct MenuBarView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("DriveSync")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.custom(DSTypography.fontFamily, size: 15).weight(.bold))
                     .foregroundColor(.primary)
 
                 Text(syncManager.statusText)
-                    .font(.system(size: 13))
+                    .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                     .foregroundColor(.secondary)
             }
 
@@ -121,11 +121,11 @@ struct MenuBarView: View {
 
                 if let folder = syncManager.currentSyncFolder {
                     Text("menu.syncing_folder".localized(with: folder.displayName))
-                        .font(.system(size: 13))
+                        .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                         .foregroundColor(.primary)
                 } else {
                     Text("menu.syncing".localized)
-                        .font(.system(size: 13))
+                        .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                         .foregroundColor(.primary)
                 }
 
@@ -151,12 +151,12 @@ struct MenuBarView: View {
                 HStack(spacing: 6) {
                     if let percent = syncManager.syncProgressPercent {
                         Text("\(Int(percent * 100))%")
-                            .font(.system(size: 11))
+                            .font(.custom(DSTypography.fontFamily, size: 11).weight(.medium))
                             .foregroundColor(.secondary)
                     }
 
                     Text(syncManager.syncProgress.isEmpty ? "menu.preparing".localized : syncManager.syncProgress)
-                        .font(.system(size: 10))
+                        .font(.custom(DSTypography.fontFamily, size: 10).weight(.medium))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
 
@@ -169,11 +169,11 @@ struct MenuBarView: View {
     private var rcloneNotInstalledSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("menu.rclone_not_installed".localized)
-                .font(.system(size: 13, weight: .medium))
+                .font(.custom(DSTypography.fontFamily, size: 13).weight(.semibold))
                 .foregroundColor(.red)
 
             Text("menu.install_homebrew".localized)
-                .font(.system(size: 11))
+                .font(.custom(DSTypography.fontFamily, size: 11).weight(.medium))
                 .foregroundColor(.secondary)
 
             HStack {
@@ -212,14 +212,14 @@ struct MenuBarView: View {
                 .symbolRenderingMode(.hierarchical)
 
             Text("menu.no_folders".localized)
-                .font(.system(size: 13))
+                .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                 .foregroundColor(.secondary)
 
             Button {
                 openSettings()
             } label: {
                 Text("menu.add_folder".localized)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.custom(DSTypography.fontFamily, size: 13).weight(.semibold))
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -232,7 +232,7 @@ struct MenuBarView: View {
 
         return VStack(alignment: .leading, spacing: 0) {
             Text("menu.folders".localized)
-                .font(.system(size: 11, weight: .medium))
+                .font(.custom(DSTypography.fontFamily, size: 11).weight(.semibold))
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
                 .tracking(0.6)
@@ -257,7 +257,7 @@ struct MenuBarView: View {
                 }
             } label: {
                 Label("menu.sync_all".localized, systemImage: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 13))
+                    .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(MenuActionButtonStyle())
@@ -269,7 +269,7 @@ struct MenuBarView: View {
                 openSettings()
             } label: {
                 Label("menu.settings".localized, systemImage: "gear")
-                    .font(.system(size: 13))
+                    .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(MenuActionButtonStyle())
@@ -282,7 +282,7 @@ struct MenuBarView: View {
             NSApplication.shared.terminate(nil)
         } label: {
             Label("menu.quit".localized, systemImage: "power")
-                .font(.system(size: 13))
+                .font(.custom(DSTypography.fontFamily, size: 13).weight(.medium))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(MenuActionButtonStyle())
@@ -320,12 +320,12 @@ struct FolderCardView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(folder.displayName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.custom(DSTypography.fontFamily, size: 13).weight(.semibold))
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
                 Text(folder.remoteName)
-                    .font(.system(size: 11))
+                    .font(.custom(DSTypography.fontFamily, size: 11).weight(.medium))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }

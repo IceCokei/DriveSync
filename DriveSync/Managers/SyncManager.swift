@@ -76,10 +76,24 @@ class SyncManager: ObservableObject {
             let errorCount = enabledFolders.filter { $0.lastSyncStatus == .error }.count
             if errorCount > 0 {
                 return "sync.folders_failed".localized(with: errorCount)
-            } else if let lastSync = lastSyncDate {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .abbreviated
-                return "status.last_sync_relative".localized(with: formatter.localizedString(for: lastSync, relativeTo: Date()))
+            } else if let mostRecentSync = folders.compactMap({ $0.lastSyncDate }).max() {
+                let interval = Date().timeIntervalSince(mostRecentSync)
+                if interval < 60 {
+                    return "status.last_sync_now".localized
+                } else if interval < 3600 {
+                    let minutes = Int(interval / 60)
+                    return "status.last_sync_min".localized(with: minutes)
+                } else if interval < 86400 {
+                    let hours = Int(interval / 3600)
+                    return "status.last_sync_hr".localized(with: hours)
+                } else {
+                    let days = Int(interval / 86400)
+                    if days > 1 {
+                        return "status.last_sync_days".localized(with: days)
+                    } else {
+                        return "status.last_sync_day".localized(with: days)
+                    }
+                }
             } else {
                 return "sync.ready".localized
             }
