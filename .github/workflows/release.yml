@@ -64,7 +64,13 @@ jobs:
         run: |
           APP_PATH="build/DriveSync.xcarchive/Products/Applications/DriveSync.app"
 
-          # Deep sign all components
+          # Sign the bundled rclone binary first (required for notarization)
+          codesign --force --options runtime \
+            --sign "Developer ID Application" \
+            --timestamp \
+            "$APP_PATH/Contents/Resources/rclone"
+
+          # Sign the main app
           codesign --deep --force --options runtime \
             --sign "Developer ID Application" \
             --timestamp \
