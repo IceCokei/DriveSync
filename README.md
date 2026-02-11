@@ -66,6 +66,7 @@ This project is forked from [GoogleDriveSync](https://github.com/saihgupr/Google
 ## License
 
 [GPL v3.0](LICENSE) — free to use, modify, and distribute. Modified versions must remain open source under the same license.
+(Original code licensed under [MIT](LICENSE.original))
 
 ## Support & Feedback
 

@@ -19,6 +19,7 @@
 		4A123456000C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A123455000C /* DesignSystem.swift */; };
 		4A123456000D /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A123455000D /* LocalizationManager.swift */; };
 		4A123456000E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4A1234590001 /* Localizable.strings */; };
+		E9E5F7612F3C040E00D50A8B /* rclone in Resources */ = {isa = PBXBuildFile; fileRef = E9E5F7602F3C040E00D50A8B /* rclone */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		4A123455000D /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		4A123455000E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		4A123455000F /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		E9E5F7602F3C040E00D50A8B /* rclone */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = rclone; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,6 +115,7 @@
 		4A1234520006 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				E9E5F7602F3C040E00D50A8B /* rclone */,
 				4A1234550008 /* ProcessRunner.swift */,
 				4A123455000C /* DesignSystem.swift */,
 				4A123455000D /* LocalizationManager.swift */,
@@ -187,6 +190,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9E5F7612F3C040E00D50A8B /* rclone in Resources */,
 				4A1234560009 /* Assets.xcassets in Resources */,
 				4A123456000E /* Localizable.strings in Resources */,
 			);
@@ -366,7 +370,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coke.drivesync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -395,7 +399,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coke.drivesync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

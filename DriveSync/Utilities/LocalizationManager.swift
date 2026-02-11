@@ -4,6 +4,9 @@
 //
 //  Manages app language switching with custom Bundle support.
 //
+//  Created by IceCokei on 2026.
+//  Copyright (c) 2026 IceCokei. Licensed under GPL v3.0.
+//
 
 import Foundation
 

@@ -3,6 +3,8 @@
 //  DriveSync
 //
 //  Created by saihgupr on 2024-12-11.
+//  Modified by IceCokei on 2026.
+//  Copyright (c) 2026 IceCokei. Licensed under GPL v3.0.
 //
 
 import Foundation
@@ -85,7 +87,9 @@ struct AppSettings: Codable, Equatable {
     var appearanceMode: AppearanceMode
     var language: AppLanguage
 
-    static let defaultRclonePath = "/opt/homebrew/bin/rclone"
+    static var defaultRclonePath: String {
+        return detectRclonePath() ?? "/opt/homebrew/bin/rclone"
+    }
     static let intelRclonePath = "/usr/local/bin/rclone"
 
     /// Default sync time: 9:00 AM

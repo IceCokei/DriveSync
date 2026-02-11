@@ -4,6 +4,9 @@
 //
 //  Minimalist macOS Design System - Clean & Modern
 //
+//  Created by IceCokei on 2026.
+//  Copyright (c) 2026 IceCokei. Licensed under GPL v3.0.
+//
 
 import SwiftUI
 

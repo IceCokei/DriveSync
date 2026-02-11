@@ -3,6 +3,8 @@
 //  DriveSync
 //
 //  Created by saihgupr on 2024-12-11.
+//  Modified by IceCokei on 2026.
+//  Copyright (c) 2026 IceCokei. Licensed under GPL v3.0.
 //
 
 import SwiftUI
