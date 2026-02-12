@@ -87,6 +87,8 @@
 "settings.general.language" = "Language";
 "settings.general.sync_schedule" = "Sync Schedule";
 "settings.general.sync_interval" = "Sync Interval";
+"settings.general.sync_time" = "Sync Time";
+"settings.general.next_sync" = "Next sync: %@";
 "settings.general.sync_on_launch" = "Sync when app launches";
 "settings.general.app_behavior" = "App Behavior";
 "settings.general.show_notifications" = "Show notifications after sync";

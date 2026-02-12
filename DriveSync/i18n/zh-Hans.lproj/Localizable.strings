@@ -87,6 +87,8 @@
 "settings.general.language" = "语言";
 "settings.general.sync_schedule" = "同步计划";
 "settings.general.sync_interval" = "同步间隔";
+"settings.general.sync_time" = "同步时间";
+"settings.general.next_sync" = "下次同步：%@";
 "settings.general.sync_on_launch" = "启动时同步";
 "settings.general.app_behavior" = "应用行为";
 "settings.general.show_notifications" = "同步后显示通知";

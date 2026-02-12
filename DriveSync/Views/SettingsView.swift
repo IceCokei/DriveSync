@@ -26,8 +26,6 @@ struct SettingsView: View {
             .padding(.vertical, 12)
             .background(colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
 
-            Divider()
-
             // Content
             ZStack {
                 (colorScheme == .dark ? Color.dsBackgroundDark : Color.dsBackgroundLight)
@@ -835,6 +833,7 @@ struct AccountsSettingsView: View {
     @EnvironmentObject var syncManager: SyncManager
     @State private var showingAddAccountSheet = false
     @State private var accountToRename: RcloneRemote?
+    @State private var isRefreshing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -938,57 +937,69 @@ struct AccountsSettingsView: View {
                             }
                         }
 
-                        // Add Another Account button (dashed border)
-                        Button {
-                            showingAddAccountSheet = true
-                        } label: {
-                            HStack {
-                                Spacer()
+                        // Add Account + Refresh row
+                        HStack(spacing: 10) {
+                            Button {
+                                showingAddAccountSheet = true
+                            } label: {
+                                HStack {
+                                    Spacer()
 
-                                Image("PlusIcon")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 16, height: 16)
+                                    Image("PlusIcon")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 16, height: 16)
 
-                                Text("settings.accounts.add_another".localized)
-                                    .font(DSTypography.body.font)
+                                    Text("settings.accounts.add_another".localized)
+                                        .font(DSTypography.body.font)
 
-                                Spacer()
+                                    Spacer()
+                                }
+                                .padding(DesignTokens.spacingM)
+                                .background(
+                                    RoundedRectangle(cornerRadius: DesignTokens.radiusM)
+                                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                                        .foregroundStyle(Color.dsBorder)
+                                )
                             }
-                            .padding(DesignTokens.spacingM)
-                            .background(
-                                RoundedRectangle(cornerRadius: DesignTokens.radiusM)
-                                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                                    .foregroundStyle(Color.dsBorder)
-                            )
+                            .buttonStyle(.plain)
+                            .foregroundStyle(Color.dsTextPrimary)
+
+                            Button {
+                                guard !isRefreshing else { return }
+                                isRefreshing = true
+                                Task {
+                                    await syncManager.refreshRemotes()
+                                    try? await Task.sleep(nanoseconds: 300_000_000)
+                                    isRefreshing = false
+                                }
+                            } label: {
+                                HStack {
+                                    Spacer()
+
+                                    if isRefreshing {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                            .frame(width: 14, height: 14)
+                                    } else {
+                                        Image("RefreshIcon")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 14, height: 14)
+                                    }
+
+                                    Text("common.refresh".localized)
+                                        .font(DSTypography.body.font)
+
+                                    Spacer()
+                                }
+                                .padding(DesignTokens.spacingM)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(Color.dsTextPrimary)
+                            .dsCard()
+                            .disabled(isRefreshing)
                         }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.dsTextPrimary)
-
-                        // Refresh button
-                        Button {
-                            Task {
-                                await syncManager.refreshRemotes()
-                            }
-                        } label: {
-                            HStack {
-                                Spacer()
-
-                                Image("RefreshIcon")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 14, height: 14)
-
-                                Text("common.refresh".localized)
-                                    .font(DSTypography.body.font)
-
-                                Spacer()
-                            }
-                            .padding(DesignTokens.spacingM)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.dsTextPrimary)
-                        .dsCard()
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
@@ -1222,6 +1233,68 @@ struct GeneralSettingsView: View {
                             .id(syncManager.settings.language)
                         }
                         .padding(DesignTokens.spacingM)
+
+                        // Show time picker when daily sync is selected
+                        if case .daily = syncManager.settings.syncInterval {
+                            Divider()
+
+                            HStack {
+                                Text("settings.general.sync_time".localized)
+                                    .font(DSTypography.body.font)
+                                    .foregroundStyle(Color.dsTextPrimary)
+
+                                Spacer()
+
+                                HStack(spacing: 2) {
+                                    Picker("", selection: Binding(
+                                        get: { Calendar.current.component(.hour, from: syncManager.settings.dailySyncTime) },
+                                        set: { newHour in
+                                            let minute = Calendar.current.component(.minute, from: syncManager.settings.dailySyncTime)
+                                            let roundedMinute = (minute / 5) * 5
+                                            var components = DateComponents()
+                                            components.hour = newHour
+                                            components.minute = roundedMinute
+                                            if let date = Calendar.current.date(from: components) {
+                                                syncManager.settings.dailySyncTime = date
+                                            }
+                                        }
+                                    )) {
+                                        ForEach(0..<24, id: \.self) { hour in
+                                            Text(String(format: "%02d", hour)).tag(hour)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .frame(width: 64)
+
+                                    Text(":")
+                                        .font(DSTypography.body.font)
+                                        .foregroundStyle(Color.dsTextSecondary)
+
+                                    Picker("", selection: Binding(
+                                        get: {
+                                            let minute = Calendar.current.component(.minute, from: syncManager.settings.dailySyncTime)
+                                            return (minute / 5) * 5
+                                        },
+                                        set: { newMinute in
+                                            let hour = Calendar.current.component(.hour, from: syncManager.settings.dailySyncTime)
+                                            var components = DateComponents()
+                                            components.hour = hour
+                                            components.minute = newMinute
+                                            if let date = Calendar.current.date(from: components) {
+                                                syncManager.settings.dailySyncTime = date
+                                            }
+                                        }
+                                    )) {
+                                        ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) { minute in
+                                            Text(String(format: "%02d", minute)).tag(minute)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .frame(width: 64)
+                                }
+                            }
+                            .padding(DesignTokens.spacingM)
+                        }
 
                         Divider()
 
